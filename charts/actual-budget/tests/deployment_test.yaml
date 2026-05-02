@@ -22,12 +22,13 @@ tests:
           path: spec.strategy.type
           value: Recreate
 
-  - it: should set DATA_DIR env var
+  - it: should always render the TZ env var
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: ACTUAL_DATA_DIR
+            name: TZ
+            value: UTC
 
   - it: should not set login-method env vars when using default mode
     asserts:
@@ -61,7 +62,9 @@ tests:
             name: ACTUAL_OPENID_DISCOVERY_URL
             value: https://auth.example.com
 
-  - it: should reference secret for password
+  - it: should set ACTUAL_SERVER_PASSWORD when loginMethod is password
+    set:
+      config.loginMethod: password
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
@@ -69,5 +72,6 @@ tests:
             name: ACTUAL_SERVER_PASSWORD
             valueFrom:
               secretKeyRef:
+                name: RELEASE-NAME-actual-budget
                 key: server-password
-          any: true
+                optional: true

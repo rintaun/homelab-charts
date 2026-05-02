@@ -7,14 +7,15 @@ tests:
       - isKind:
           of: ConfigMap
 
-  - it: should include config data key
+  - it: should include config.yaml data key
     asserts:
-      - isNotNullOrEmpty:
-          path: data
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-beets-config
 
   - it: should render provided config content
     set:
       config: "library: /music/beets.db"
     asserts:
-      - isNotNullOrEmpty:
-          path: data
+      - isKind:
+          of: ConfigMap

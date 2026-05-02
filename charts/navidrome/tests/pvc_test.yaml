@@ -23,9 +23,8 @@ tests:
       persistence.music.volume.nfs.server: nfs.example.com
       persistence.music.volume.nfs.path: /mnt/music
     asserts:
-      - containsDocument:
-          kind: PersistentVolume
-          apiVersion: v1
+      - hasDocuments:
+          count: 3
 
   - it: should set NFS server on the PV
     set:

@@ -3,50 +3,57 @@ templates:
   - pvc.yaml
   - ingestion-folder.yaml
 tests:
-  - it: should render a data PVC by default
-    asserts:
-      - containsDocument:
-          kind: PersistentVolumeClaim
-          apiVersion: v1
-
-  - it: should not render ingestion folder resources when disabled (default)
-    set:
-      ingestionFolder.enabled: false
+  - it: should render a data PVC from pvc.yaml
+    template: pvc.yaml
     asserts:
       - hasDocuments:
           count: 1
+      - isKind:
+          of: PersistentVolumeClaim
+
+  - it: should not render any ingestion folder resources by default
+    template: ingestion-folder.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
 
   - it: should render ingestion PVC when enabled
+    template: ingestion-folder.yaml
     set:
       ingestionFolder.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: PersistentVolumeClaim
+
+  - it: should render ingestion PV and PVC when nfs server is set
+    template: ingestion-folder.yaml
+    set:
+      ingestionFolder.enabled: true
+      ingestionFolder.volume.nfs.server: nfs.example.com
+      ingestionFolder.volume.nfs.path: /mnt/documents
     asserts:
       - hasDocuments:
           count: 2
 
-  - it: should render ingestion PV and PVC when nfs server is set
-    set:
-      ingestionFolder.enabled: true
-      ingestionFolder.volume.nfs.server: nfs.example.com
-      ingestionFolder.volume.nfs.path: /mnt/documents
-    asserts:
-      - hasDocuments:
-          count: 3
-
   - it: should set NFS server on the ingestion PV
+    template: ingestion-folder.yaml
     set:
       ingestionFolder.enabled: true
       ingestionFolder.volume.nfs.server: nfs.example.com
       ingestionFolder.volume.nfs.path: /mnt/documents
-    documentIndex: 1
+    documentIndex: 0
     asserts:
       - equal:
           path: spec.nfs.server
           value: nfs.example.com
 
   - it: should not render ingestion PVC when existingClaimName is set
+    template: ingestion-folder.yaml
     set:
       ingestionFolder.enabled: true
       ingestionFolder.existingClaimName: my-ingestion-pvc
     asserts:
       - hasDocuments:
-          count: 1
+          count: 0
