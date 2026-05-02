@@ -22,16 +22,16 @@ tests:
           path: spec.template.spec.containers[0].image
           pattern: "papra/papra:1.0.0-rootless"
 
-  - it: should reference auth secret for PAPRA_AUTH_SECRET
+  - it: should reference auth secret for AUTH_SECRET
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: PAPRA_AUTH_SECRET
+            name: AUTH_SECRET
             valueFrom:
               secretKeyRef:
+                name: RELEASE-NAME-papra
                 key: auth-secret
-          any: true
 
   - it: should set S3 bucket env var when storage driver is s3
     set:
