@@ -63,6 +63,23 @@ entries:
   papra:
   - apiVersion: v2
     appVersion: 26.4.0
+    created: "2026-05-02T19:27:15.84419123Z"
+    description: 'Helm chart for Papra — a document management system with ingestion
+      folder watching and optional S3 document storage. '
+    digest: 8c9322ba9303c892a59cf113bbec1f02718f4e5e82bc5154edaebd2c74660f33
+    home: https://papra.app
+    keywords:
+    - document-management
+    - paperless
+    name: papra
+    sources:
+    - https://github.com/papra-hq/papra
+    type: application
+    urls:
+    - https://github.com/rintaun/homelab-charts/releases/download/papra-0.2.0/papra-0.2.0.tgz
+    version: 0.2.0
+  - apiVersion: v2
+    appVersion: 26.4.0
     created: "2026-05-02T18:37:40.297609643Z"
     description: 'Helm chart for Papra — a document management system with email ingestion,
       ingestion folder watching, and optional S3 document storage. '
@@ -79,4 +96,4 @@ entries:
     urls:
     - https://github.com/rintaun/homelab-charts/releases/download/papra-0.1.0/papra-0.1.0.tgz
     version: 0.1.0
-generated: "2026-05-02T18:37:40.297615153Z"
+generated: "2026-05-02T19:27:15.844205471Z"
