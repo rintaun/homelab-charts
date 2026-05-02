@@ -1,8 +1,7 @@
 apiVersion: v2
 name: navidrome
 type: application
-version: 0.1.0
-# renovate: datasource=docker depName=ghcr.io/navidrome/navidrome
+version: 0.1.1
 appVersion: "0.61.2"
 description: >
   Helm chart for Navidrome — a self-hosted music server and streamer
