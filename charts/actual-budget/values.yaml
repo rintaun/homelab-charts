@@ -80,8 +80,9 @@ actual:
 # server-password (the Actual server password used when loginMethod=password).
 secret:
   # create controls whether the chart creates the Secret.
-  # Set to false to use a pre-existing Secret (e.g. one managed by external-secrets).
-  create: true
+  # Defaults to false — provide a pre-existing Secret via secretName instead,
+  # or set create=true and supply values below only for local/dev use.
+  create: false
   # secretName overrides the generated Secret name when set.
   # When create=false, this must name the pre-existing Secret to use.
   # Defaults to the chart fullname when empty.
