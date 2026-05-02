@@ -2,6 +2,7 @@ apiVersion: v2
 name: papra
 type: application
 version: 0.2.0
+# renovate: datasource=docker depName=ghcr.io/papra-hq/papra
 appVersion: "26.4.0"
 description: >
   Helm chart for Papra — a document management system with ingestion folder

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+
+  "labels": ["renovate"],
+  "assignees": ["rintaun"],
+
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 2,
+  "separateMajorMinor": true,
+  "separateMinorPatch": false,
+
+  // ── Custom managers ────────────────────────────────────────────────────────
+  "customManagers": [
+    {
+      // Reads: # renovate: datasource=<ds> depName=<image>
+      //        appVersion: "<version>"
+      // Works for any datasource — add the annotation to Chart.yaml to opt in.
+      "description": "Update appVersion in Chart.yaml via inline Renovate annotation",
+      "customType": "regex",
+      "fileMatch": ["^charts/[^/]+/Chart\\.yaml$"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\n]+)\\nappVersion: \"(?<currentValue>[^\"]+)\""
+      ]
+    },
+    {
+      "description": "Update beets PyPI version in the Docker build arg",
+      "customType": "regex",
+      "fileMatch": ["^docker/beets/Dockerfile$"],
+      "matchStrings": ["ARG APP_VERSION=(?<currentValue>[\\d.]+)"],
+      "datasourceTemplate": "pypi",
+      "packageNameTemplate": "beets",
+      "depNameTemplate": "beets"
+    }
+  ],
+
+  "packageRules": [
+    // ── papra uses a -rootless tag suffix; extract semver ──────────────────
+    {
+      "matchPackageNames": ["ghcr.io/papra-hq/papra"],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-rootless$"
+    },
+
+    // ── Group beets Dockerfile ARG + chart appVersion into one PR ──────────
+    {
+      "matchPackageNames": ["beets", "ghcr.io/rintaun/beets"],
+      "groupName": "beets"
+    },
+
+    // ── GitHub Actions: group non-major + automerge ────────────────────────
+    {
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "GitHub Actions",
+      "automerge": true
+    },
+
+    // ── Major updates always get individual PRs ────────────────────────────
+    {
+      "matchUpdateTypes": ["major"],
+      "addLabels": ["major-update"]
+    },
+
+    // ── Ignore `latest` tags ───────────────────────────────────────────────
+    {
+      "matchCurrentValue": "latest",
+      "enabled": false
+    }
+  ]
+}
