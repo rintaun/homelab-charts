@@ -35,3 +35,13 @@ tests:
       - equal:
           path: spec.nfs.server
           value: nfs.example.com
+
+  - it: should set empty storageClassName on media PVC when NFS is set
+    set:
+      persistence.media.volume.nfs.server: nfs.example.com
+      persistence.media.volume.nfs.path: /mnt/media
+    documentIndex: 2
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: ""

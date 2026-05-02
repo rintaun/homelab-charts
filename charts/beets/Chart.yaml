@@ -1,7 +1,7 @@
 apiVersion: v2
 name: beets
 type: application
-version: 0.2.1
+version: 0.2.2
 appVersion: "2.10.0"
 description: >
   Helm chart for beets — the music geek's media organizer.

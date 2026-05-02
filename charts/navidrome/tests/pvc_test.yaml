@@ -36,6 +36,16 @@ tests:
           path: spec.nfs.server
           value: nfs.example.com
 
+  - it: should set empty storageClassName on music PVC when NFS is set
+    set:
+      persistence.music.volume.nfs.server: nfs.example.com
+      persistence.music.volume.nfs.path: /mnt/music
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: ""
+
   - it: should not render music PVC when existingClaimName is set
     set:
       persistence.music.existingClaimName: my-music-pvc
