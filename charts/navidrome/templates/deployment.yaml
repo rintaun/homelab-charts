@@ -59,10 +59,6 @@ spec:
             - name: ND_IMAGECACHESIZE
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.navidrome.enableUserEditing }}
-            - name: ND_ENABLEUSEREDITING
-              value: {{ . | quote }}
-            {{- end }}
             {{- with .Values.navidrome.extAuth.trustedSources }}
             - name: ND_EXTAUTH_TRUSTEDSOURCES
               value: {{ . | quote }}
@@ -71,6 +67,8 @@ spec:
             - name: ND_EXTAUTH_USERHEADER
               value: {{ . | quote }}
             {{- end }}
+            - name: ND_ENABLEUSEREDITING
+              value: {{ .Values.navidrome.extAuth.enableUserEditing | quote }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           livenessProbe:
