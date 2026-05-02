@@ -8,25 +8,29 @@ tests:
           kind: PersistentVolumeClaim
           apiVersion: v1
 
+  - it: should render a media PVC by default
+    asserts:
+      - hasDocuments:
+          count: 2
+
   - it: should not render a PV when nfs.server is not set
     asserts:
       - hasDocuments:
-          count: 1
+          count: 2
 
   - it: should render a PV and PVC when media nfs server is set
     set:
       persistence.media.volume.nfs.server: nfs.example.com
       persistence.media.volume.nfs.path: /mnt/media
     asserts:
-      - containsDocument:
-          kind: PersistentVolume
-          apiVersion: v1
+      - hasDocuments:
+          count: 3
 
   - it: should set NFS server on the PV when specified
     set:
       persistence.media.volume.nfs.server: nfs.example.com
       persistence.media.volume.nfs.path: /mnt/media
-    documentIndex: 0
+    documentIndex: 1
     asserts:
       - equal:
           path: spec.nfs.server
