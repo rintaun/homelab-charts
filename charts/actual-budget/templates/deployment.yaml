@@ -1,0 +1,120 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "actual-budget.fullname" . }}
+  labels:
+    {{- include "actual-budget.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "actual-budget.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "actual-budget.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "actual-budget.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "actual-budget.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- with .Values.actual.loginMethod }}
+            - name: ACTUAL_LOGIN_METHOD
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.actual.allowedLoginMethods }}
+            - name: ACTUAL_ALLOWED_LOGIN_METHODS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.actual.openid.discoveryUrl }}
+            - name: ACTUAL_OPENID_DISCOVERY_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.actual.openid.clientId }}
+            - name: ACTUAL_OPENID_CLIENT_ID
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if or .Values.actual.openid.clientId .Values.actual.openid.discoveryUrl }}
+            - name: ACTUAL_OPENID_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "actual-budget.secretName" . }}
+                  key: oidc-client-secret
+            {{- end }}
+            {{- with (default (printf "https://%s" .Values.ingress.host) .Values.actual.openid.serverHostname) }}
+            {{- if and . (not (eq . "https://")) }}
+            - name: ACTUAL_OPENID_SERVER_HOSTNAME
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if eq .Values.actual.loginMethod "password" }}
+            - name: ACTUAL_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "actual-budget.secretName" . }}
+                  key: server-password
+                  optional: true
+            {{- end }}
+            {{- with .Values.actual.uploadFileSizeLimitMb }}
+            - name: ACTUAL_UPLOAD_FILE_SIZE_LIMIT_MB
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.actual.uploadFileSyncSizeLimitMb }}
+            - name: ACTUAL_UPLOAD_FILE_SYNC_SIZE_LIMIT_MB
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.actual.uploadSyncEncryptedFileSyncSizeLimitMb }}
+            - name: ACTUAL_UPLOAD_SYNC_ENCRYPTED_FILE_SYNC_SIZE_LIMIT_MB
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.actual.trustedProxies }}
+            - name: ACTUAL_TRUSTED_PROXIES
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.actual.trustedAuthProxies }}
+            - name: ACTUAL_TRUSTED_AUTH_PROXIES
+              value: {{ . | quote }}
+            {{- end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - mountPath: /data
+              name: data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "actual-budget.fullname" . }}-data

@@ -1,0 +1,135 @@
+# nameOverride replaces the chart name in resource names when set.
+nameOverride: ""
+# fullnameOverride replaces the fully-qualified release name when set.
+fullnameOverride: ""
+
+# replicaCount is the number of pod replicas to run.
+replicaCount: 1
+
+image:
+  # repository is the container image repository.
+  repository: ghcr.io/actualbudget/actual-server
+  # tag overrides the chart appVersion when set.
+  tag: ""
+  # digest pins to an immutable image reference. Prepend sha256: or omit the prefix.
+  digest: ""
+  # pullPolicy is the image pull policy.
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  # create specifies whether a ServiceAccount should be created.
+  create: true
+  # annotations to add to the ServiceAccount.
+  annotations: {}
+  # name overrides the generated name when set.
+  name: ""
+
+# podAnnotations are extra annotations added to the pod.
+podAnnotations: {}
+
+# podSecurityContext sets the security context for the pod.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# securityContext sets the security context for the actual-budget container.
+# readOnlyRootFilesystem is false because actual-budget writes to /data at runtime.
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop: ["ALL"]
+
+# env contains extra environment variables injected into the container (e.g. TZ).
+env:
+  TZ: "UTC"
+
+actual:
+  # loginMethod sets ACTUAL_LOGIN_METHOD. One of: "password", "header", "openid".
+  loginMethod: ""
+  # allowedLoginMethods sets ACTUAL_ALLOWED_LOGIN_METHODS (comma-separated).
+  # Example: "openid" to prevent password/header login when using OIDC.
+  allowedLoginMethods: ""
+  # uploadFileSizeLimitMb sets ACTUAL_UPLOAD_FILE_SIZE_LIMIT_MB (default: 20).
+  uploadFileSizeLimitMb: ""
+  # uploadFileSyncSizeLimitMb sets ACTUAL_UPLOAD_FILE_SYNC_SIZE_LIMIT_MB (default: 20).
+  uploadFileSyncSizeLimitMb: ""
+  # uploadSyncEncryptedFileSyncSizeLimitMb sets ACTUAL_UPLOAD_SYNC_ENCRYPTED_FILE_SYNC_SIZE_LIMIT_MB (default: 50).
+  uploadSyncEncryptedFileSyncSizeLimitMb: ""
+  # trustedProxies sets ACTUAL_TRUSTED_PROXIES (comma-separated CIDRs). Leave empty to use
+  # Actual's default (RFC-1918 ranges + loopback).
+  trustedProxies: ""
+  # trustedAuthProxies sets ACTUAL_TRUSTED_AUTH_PROXIES (comma-separated CIDRs). Leave empty
+  # to inherit from trustedProxies.
+  trustedAuthProxies: ""
+  openid:
+    # discoveryUrl sets ACTUAL_OPENID_DISCOVERY_URL.
+    discoveryUrl: ""
+    # clientId sets ACTUAL_OPENID_CLIENT_ID.
+    clientId: ""
+    # serverHostname sets ACTUAL_OPENID_SERVER_HOSTNAME (the public URL of this Actual instance,
+    # used to build the OIDC redirect URI). Defaults to https://<ingress.host> when empty.
+    serverHostname: ""
+
+# secret configures credentials for Actual Budget.
+# The chart Secret holds: oidc-client-secret (OpenID client secret) and/or
+# server-password (the Actual server password used when loginMethod=password).
+# Include only the keys relevant to your loginMethod.
+secret:
+  # mode controls how the Secret is managed. One of:
+  #   "external" - create an ExternalSecret (requires external-secrets operator)
+  #   "create"   - create a plain Secret from the inline values below
+  #   "existing" - use a pre-existing Secret; set secret.existingSecretName
+  mode: external
+  # existingSecretName is used when mode=existing.
+  existingSecretName: ""
+  # oidcClientSecret is the OpenID Connect client secret (used when mode=create).
+  oidcClientSecret: ""
+  # serverPassword is the Actual server password (used when mode=create and loginMethod=password).
+  serverPassword: ""
+
+# externalSecret configures the ExternalSecret (used when secret.mode=external).
+externalSecret:
+  # secretStoreName is the name of the ESO SecretStore or ClusterSecretStore.
+  secretStoreName: ""
+  secretStoreKind: ClusterSecretStore
+  refreshInterval: 1h
+  remoteRef:
+    # key is the path to the secret in the store.
+    key: "secret/actual-budget"
+    # oidcClientSecretProperty is the field name for the OIDC client secret.
+    # Leave empty to omit this key from the ExternalSecret.
+    oidcClientSecretProperty: "oidcClientSecret"
+    # serverPasswordProperty is the field name for the server password.
+    # Leave empty to omit this key from the ExternalSecret.
+    serverPasswordProperty: ""
+
+service:
+  # port is the port the actual-budget container listens on.
+  port: 5006
+
+ingress:
+  # host is the DNS hostname to expose the service on. Leave empty to skip ingress creation.
+  host: ""
+  # className is the IngressClass to use. Empty string uses the cluster's default IngressClass.
+  className: ""
+  # annotations are added to the Ingress resource metadata.
+  annotations: {}
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+persistence:
+  data:
+    # storageClass is the Kubernetes StorageClass to use. Empty string uses the cluster default.
+    storageClass: ""
+    # size is the storage capacity requested for the data volume.
+    size: 5Gi
