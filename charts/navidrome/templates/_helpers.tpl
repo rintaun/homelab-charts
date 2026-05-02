@@ -77,14 +77,6 @@ Create the name of the service account to use.
 {{- end }}
 
 {{/*
-Name of the Secret holding OIDC client secret and session encryption key.
-Uses secret.secretName when set, otherwise defaults to the chart fullname.
-*/}}
-{{- define "navidrome.secretName" -}}
-{{- default (include "navidrome.fullname" .) .Values.secret.secretName }}
-{{- end }}
-
-{{/*
 Name of the PersistentVolumeClaim for the music library.
 Uses persistence.music.existingClaimName when set, otherwise the chart fullname suffixed with "-music".
 */}}
