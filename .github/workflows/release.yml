@@ -30,3 +30,60 @@ jobs:
           charts_dir: charts
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Regenerate index.html chart table
+        run: |
+          git fetch origin gh-pages
+          git checkout gh-pages
+
+          python3 - <<'EOF'
+          import re, yaml, html
+
+          with open("index.yaml") as f:
+              index = yaml.safe_load(f)
+
+          repo = "https://github.com/rintaun/homelab-charts"
+          rows = []
+          for name, versions in sorted(index.get("entries", {}).items()):
+              latest = versions[0]
+              chart_ver = html.escape(latest.get("version", ""))
+              app_ver   = html.escape(latest.get("appVersion", ""))
+              desc      = html.escape(latest.get("description", "").strip())
+              rows.append(
+                  f'        <tr>\n'
+                  f'          <td><a href="{repo}/tree/main/charts/{name}">{name}</a></td>\n'
+                  f'          <td><span class="pill">{chart_ver}</span></td>\n'
+                  f'          <td><span class="pill">{app_ver}</span></td>\n'
+                  f'          <td>{desc}</td>\n'
+                  f'        </tr>'
+              )
+
+          new_block = (
+              "        <!-- CHART_TABLE_START -->\n"
+              + "\n".join(rows)
+              + "\n        <!-- CHART_TABLE_END -->"
+          )
+
+          with open("index.html") as f:
+              content = f.read()
+
+          updated = re.sub(
+              r"        <!-- CHART_TABLE_START -->.*?<!-- CHART_TABLE_END -->",
+              new_block,
+              content,
+              flags=re.DOTALL,
+          )
+
+          with open("index.html", "w") as f:
+              f.write(updated)
+
+          print("index.html updated.")
+          EOF
+
+          if git diff --quiet index.html; then
+            echo "No changes to index.html."
+          else
+            git add index.html
+            git commit -m "docs: regenerate chart table in index.html [skip ci]"
+            git push origin gh-pages
+          fi
