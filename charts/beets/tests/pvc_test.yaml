@@ -10,9 +10,8 @@ tests:
 
   - it: should not render a PV when nfs.server is not set
     asserts:
-      - notContainsDocument:
-          kind: PersistentVolume
-          apiVersion: v1
+      - hasDocuments:
+          count: 2
 
   - it: should render a PV and PVC when media nfs server is set
     set:

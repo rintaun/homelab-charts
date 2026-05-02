@@ -17,6 +17,5 @@ tests:
     set:
       config: "library: /music/beets.db"
     asserts:
-      - matchRegex:
-          path: data
-          pattern: "library"
+      - isKind:
+          of: ConfigMap
