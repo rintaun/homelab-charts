@@ -55,6 +55,9 @@ service:
   port: 1221
 
 ingress:
+  # enabled controls whether an Ingress resource is created. Set to false to expose the service
+  # via other means (e.g. LoadBalancer, NodePort, service mesh).
+  enabled: true
   # host is the fully-qualified hostname for the ingress. Leave empty to skip ingress creation.
   host: ""
   # className is the IngressClass to use. Empty string uses the cluster's default IngressClass.

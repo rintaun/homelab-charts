@@ -279,13 +279,41 @@ Prefer namespace-scoped Roles unless the workload genuinely needs cluster-wide a
 
 ---
 
+## Optional resources
+
+Resources that are commonly needed but might be replaced or deployed separately should be
+guarded by an `enabled` flag (default `true`). The entire template file is wrapped in
+`{{- if .Values.<thing>.enabled }}` so the resource can be disabled without touching templates.
+
+Use `enabled: true` (not `create`) for things that represent optional infrastructure — `create`
+is reserved for factory-style flags like `serviceAccount.create` that follow the standard Helm
+library convention.
+
+Current optional resources and their guards:
+
+| Resource | Guard |
+|---|---|
+| Ingress | `ingress.enabled` + `ingress.host` non-empty |
+| ServiceAccount | `serviceAccount.create` |
+| RBAC | `rbac.create` |
+| Secret | `secret.create` |
+| Sidecar containers | `<sidecar>.enabled` |
+
+When adding a new optional resource type, default `enabled` to `true` unless the feature is
+off-by-default (e.g. a sidecar that most users won't need).
+
+---
+
 ## Ingress
 
-All ingress configuration lives under the `ingress` key. The chart must gate ingress creation on
-`ingress.host` being non-empty — do not render an Ingress when no host is set.
+All ingress configuration lives under the `ingress` key. An Ingress is only rendered when
+**both** `ingress.enabled` is `true` and `ingress.host` is non-empty.
 
 ```yaml
 ingress:
+  # enabled controls whether an Ingress resource is created. Set to false to expose the
+  # service via other means (e.g. LoadBalancer, NodePort, service mesh).
+  enabled: true
   # host is the DNS hostname to expose the service on. Leave empty to skip ingress creation.
   host: ""
   # className is the IngressClass to use. Empty string uses the cluster's default IngressClass.
@@ -294,10 +322,10 @@ ingress:
   annotations: {}
 ```
 
-Render `ingressClassName` and `annotations` conditionally:
+Render the Ingress conditionally:
 
 ```gotpl
-{{- if .Values.ingress.host }}
+{{- if and .Values.ingress.enabled .Values.ingress.host }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
