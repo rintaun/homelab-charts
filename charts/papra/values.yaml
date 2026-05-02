@@ -248,26 +248,40 @@ ingestionFolder:
   # mountPath is the path inside the Papra container where the share is mounted.
   mountPath: /app/ingestion
 
-  # nfs creates a PersistentVolume and PersistentVolumeClaim backed by an NFS export.
-  # Leave server empty to skip PV/PVC creation and use existingClaimName instead.
-  nfs:
-    # server is the NFS server hostname or IP address.
-    server: ""
-    # path is the exported NFS path.
-    path: ""
-    # storageClass is the Kubernetes StorageClass name to set on the PV/PVC pair.
-    storageClass: "nfs"
-    # capacity is the storage capacity advertised on the PV.
-    capacity: "10Ti"
-    mountOptions:
-      - hard
-      - nfsvers=4
-
-  # existingClaimName uses a pre-existing PVC instead of creating one from nfs config above.
+  # existingClaimName uses a pre-existing PVC instead of creating one.
+  # When set, claim and volume below are ignored entirely.
   existingClaimName: ""
 
+  # claim configures the PVC created by this chart.
+  # Ignored when existingClaimName is set.
+  claim:
+    # storageClassName is the StorageClass to use. Empty string uses the cluster default.
+    storageClassName: ""
+    # accessModes are the PVC access modes.
+    accessModes:
+      - ReadWriteOnce
+    # size is the requested storage capacity.
+    size: 10Gi
+    # volumeName explicitly binds the PVC to a specific PV by name.
+    # Leave empty for dynamic provisioning.
+    # Automatically set to the chart-managed PV when volume.nfs.server is configured.
+    volumeName: ""
+
+  # volume creates a static PersistentVolume bound to the chart's PVC.
+  # Useful for NFS or other manually-provisioned shares.
+  # Set volume.nfs.server to enable PV creation; leave empty to skip.
+  volume:
+    nfs:
+      # server is the NFS server hostname or IP. Leave empty to skip PV creation.
+      server: ""
+      # path is the exported NFS path.
+      path: ""
+      mountOptions:
+        - hard
+        - nfsvers=4
+
   # usePolling enables polling-based file watching instead of inotify.
-  # Must be true for NFS, SMB, and other network filesystems (inotify doesn't fire over them).
+  # Must be true for NFS, SMB, and other network filesystems.
   usePolling: true
 
   # pollingIntervalMs is the file-check interval in milliseconds when usePolling is true.
