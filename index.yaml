@@ -40,6 +40,26 @@ entries:
   beets:
   - apiVersion: v2
     appVersion: 2.10.0
+    created: "2026-05-02T22:40:48.893362174Z"
+    description: 'Helm chart for beets — the music geek''s media organizer. Runs as
+      a Kubernetes CronJob to periodically import and tag new music files. '
+    digest: 334d4aaad8133ee0bce9be99f7143d5c17ac1018c9e6838d7a171558dc2182a7
+    home: https://beets.io
+    keywords:
+    - music
+    - media
+    - tagging
+    - cronjob
+    name: beets
+    sources:
+    - https://github.com/beetbox/beets
+    - https://github.com/rintaun/homelab-charts/tree/main/docker/beets
+    type: application
+    urls:
+    - https://github.com/rintaun/homelab-charts/releases/download/beets-0.2.5/beets-0.2.5.tgz
+    version: 0.2.5
+  - apiVersion: v2
+    appVersion: 2.10.0
     created: "2026-05-02T22:26:12.461919502Z"
     description: 'Helm chart for beets — the music geek''s media organizer. Runs as
       a Kubernetes CronJob to periodically import and tag new music files. '
@@ -249,4 +269,4 @@ entries:
     urls:
     - https://github.com/rintaun/homelab-charts/releases/download/papra-0.1.0/papra-0.1.0.tgz
     version: 0.1.0
-generated: "2026-05-02T22:26:12.461961Z"
+generated: "2026-05-02T22:40:48.89339317Z"
