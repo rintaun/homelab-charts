@@ -1,6 +1,75 @@
 # Contributing
 
-This document describes the conventions used when authoring Helm charts in this repository.
+This document describes the conventions used when authoring Helm charts and Docker images
+in this repository.
+
+---
+
+## Docker images
+
+Some charts require a custom-built container image. These live under `docker/` at the
+repository root, one subdirectory per image:
+
+```
+docker/
+  beets/
+    Dockerfile
+    # any other build-time files
+```
+
+### Dockerfile conventions
+
+Every Dockerfile must declare the application version as a build argument named `APP_VERSION`,
+with the current pinned version as the default:
+
+```dockerfile
+ARG APP_VERSION=1.2.3
+
+FROM base-image
+
+ARG APP_VERSION   # re-declare after FROM so it's in scope for RUN steps
+
+RUN install-tool==${APP_VERSION}
+```
+
+- **`ARG APP_VERSION`** must appear on the very first line (before `FROM`) so that Renovate can
+  track it for automated version updates.
+- The re-declaration after `FROM` brings the build arg back into scope for subsequent `RUN`
+  steps (Docker clears args at each `FROM`).
+- Do not hardcode the version elsewhere in the file — use `${APP_VERSION}` consistently.
+
+### CI workflow
+
+A single workflow (`.github/workflows/docker-publish.yml`) handles all images:
+
+- **Push to `main`**: builds and pushes only the images whose `docker/<name>/` directory
+  changed in that push.
+- **Pull request**: builds (but does not push) all changed images for validation.
+- **`workflow_dispatch`**: builds and pushes every image regardless of changes.
+
+Each image is published to GHCR as `ghcr.io/<owner>/<name>` with three tags:
+
+| Tag | Example | Notes |
+|---|---|---|
+| App version | `2.10.0` | Extracted from `ARG APP_VERSION=` in the Dockerfile |
+| `latest` | `latest` | Only applied on pushes to the default branch |
+| Short SHA | `sha-abc1234` | Always applied; useful for exact pinning |
+
+To add a new image: create `docker/<name>/Dockerfile` with `ARG APP_VERSION=x.y.z` on the first
+line. The workflow detects it automatically — no workflow changes needed.
+
+### Pinning the image in a chart
+
+Charts that use a custom image should default to the GHCR path and rely on `appVersion` for
+the tag, exactly like any other chart. The `image.digest` field can be used for immutable
+pinning in production:
+
+```yaml
+image:
+  repository: ghcr.io/rintaun/beets
+  tag: ""      # defaults to Chart.appVersion
+  digest: ""   # optional: pin to a specific digest (sha256:...)
+```
 
 ---
 
