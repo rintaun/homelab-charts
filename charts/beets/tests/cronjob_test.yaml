@@ -55,3 +55,22 @@ tests:
             - import
             - /media/import
             - "-v"
+
+  - it: should include extraEnv in container env
+    set:
+      extraEnv:
+        - name: ACOUSTID_APIKEY
+          valueFrom:
+            secretKeyRef:
+              name: beets-secrets
+              key: acoustid-api-key
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: ACOUSTID_APIKEY
+            valueFrom:
+              secretKeyRef:
+                name: beets-secrets
+                key: acoustid-api-key
+          any: true
