@@ -12,9 +12,12 @@ helm search repo homelab-charts
 
 ## Charts
 
-| Chart | Description |
-| ----- | ----------- |
-| _(none yet)_ | |
+| Chart | Latest | Description |
+| ----- | ------ | ----------- |
+| [actual-budget](charts/actual-budget) | 0.1.1 | Helm chart for Actual Budget — a local-first personal finance tool with optional OpenID Connect authentication. |
+| [beets](charts/beets) | 0.2.3 | Helm chart for beets — the music geek's media organizer. Runs as a Kubernetes CronJob to periodically import and tag new music files. |
+| [navidrome](charts/navidrome) | 0.1.3 | Helm chart for Navidrome — a self-hosted music server and streamer compatible with the Subsonic/Airsonic API. |
+| [papra](charts/papra) | 0.2.1 | Helm chart for Papra — a document management system with ingestion folder watching and optional S3 document storage. |
 
 ## Development
 
