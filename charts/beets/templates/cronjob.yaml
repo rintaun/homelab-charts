@@ -51,7 +51,7 @@ spec:
                 # /data — writable PVC for library.db, import log, and artwork cache.
                 - name: data
                   mountPath: /data
-                # /media — media volume; beets reads from importDir and writes to beetsConfig.directory.
+                # /media — media volume; beets reads from importDir and writes to config.directory.
                 - name: media
                   mountPath: /media
                 # /tmp — emptyDir so beets can write temporary files with readOnlyRootFilesystem.

@@ -70,7 +70,7 @@ resources:
   limits:
     memory: 512Mi
 
-# beetsConfig is the full beets config.yaml rendered verbatim into a ConfigMap.
+# config is the full beets config.yaml rendered verbatim into a ConfigMap.
 #
 # Paths must be consistent with the volume mounts defined below:
 #   /config  – read-only ConfigMap (BEETSDIR)
@@ -85,7 +85,7 @@ resources:
 #                   auto: yes
 #   lastgenre – set lastfm_key if you want Last.fm genre lookups
 #
-beetsConfig:
+config:
   library: /data/library.db
   directory: /media/music
   log: /data/import.log
@@ -117,7 +117,7 @@ persistence:
     size: 1Gi
 
   # media configures the volume for the full media share (music library + import staging).
-  # beets reads from importDir and writes organised files to beetsConfig.directory.
+  # beets reads from importDir and writes organised files to config.directory.
   media:
     # existingClaimName uses a pre-existing PVC instead of creating one.
     # When set, claim and volume below are ignored entirely.
