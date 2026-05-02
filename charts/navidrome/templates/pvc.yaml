@@ -13,9 +13,7 @@ spec:
   accessModes:
     {{- toYaml .Values.persistence.music.claim.accessModes | nindent 4 }}
   persistentVolumeReclaimPolicy: Retain
-  {{- with .Values.persistence.music.claim.storageClass }}
-  storageClassName: {{ . }}
-  {{- end }}
+  storageClassName: {{ .Values.persistence.music.claim.storageClass | default "" }}
   mountOptions:
     {{- toYaml .Values.persistence.music.volume.nfs.mountOptions | nindent 4 }}
   nfs:
@@ -31,9 +29,7 @@ metadata:
   labels:
     {{- include "navidrome.labels" . | nindent 4 }}
 spec:
-  {{- with .Values.persistence.music.claim.storageClass }}
-  storageClassName: {{ . }}
-  {{- end }}
+  storageClassName: {{ .Values.persistence.music.claim.storageClass | default "" }}
   {{- if .Values.persistence.music.volume.nfs.server }}
   volumeName: {{ include "navidrome.fullname" . }}-music-pv
   {{- else if .Values.persistence.music.claim.volumeName }}
