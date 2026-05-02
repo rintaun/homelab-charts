@@ -1,0 +1,82 @@
+apiVersion: v1
+entries:
+  actual-budget:
+  - apiVersion: v2
+    appVersion: 26.4.0
+    created: "2026-05-02T18:37:39.92078072Z"
+    description: 'Helm chart for Actual Budget — a local-first personal finance tool
+      with optional OpenID Connect authentication. '
+    digest: b5663c80d111e62d0b7a7d389c379a1f9b82554a461ac166d074085824a7d995
+    home: https://actualbudget.org
+    keywords:
+    - finance
+    - budget
+    - personal-finance
+    name: actual-budget
+    sources:
+    - https://github.com/actualbudget/actual
+    type: application
+    urls:
+    - https://github.com/rintaun/homelab-charts/releases/download/actual-budget-0.1.0/actual-budget-0.1.0.tgz
+    version: 0.1.0
+  beets:
+  - apiVersion: v2
+    appVersion: 2.10.0
+    created: "2026-05-02T18:37:40.041843753Z"
+    description: 'Helm chart for beets — the music geek''s media organizer. Runs as
+      a Kubernetes CronJob to periodically import and tag new music files. '
+    digest: 77137ed4f6ee3d21b9dbec6d746316324719c0f4fceefb70cf290ca027b68753
+    home: https://beets.io
+    keywords:
+    - music
+    - media
+    - tagging
+    - cronjob
+    name: beets
+    sources:
+    - https://github.com/beetbox/beets
+    - https://github.com/rintaun/homelab-charts/tree/main/docker/beets
+    type: application
+    urls:
+    - https://github.com/rintaun/homelab-charts/releases/download/beets-0.1.0/beets-0.1.0.tgz
+    version: 0.1.0
+  navidrome:
+  - apiVersion: v2
+    appVersion: 0.61.2
+    created: "2026-05-02T18:37:40.157054699Z"
+    description: 'Helm chart for Navidrome — a self-hosted music server and streamer
+      compatible with the Subsonic/Airsonic API. '
+    digest: de6ff254e6ddf290bb436f4b70e773a8b44302a8363db95d1eadea38edcfc399
+    home: https://www.navidrome.org
+    keywords:
+    - music
+    - streaming
+    - subsonic
+    - media-server
+    name: navidrome
+    sources:
+    - https://github.com/navidrome/navidrome
+    type: application
+    urls:
+    - https://github.com/rintaun/homelab-charts/releases/download/navidrome-0.1.0/navidrome-0.1.0.tgz
+    version: 0.1.0
+  papra:
+  - apiVersion: v2
+    appVersion: 26.4.0
+    created: "2026-05-02T18:37:40.297609643Z"
+    description: 'Helm chart for Papra — a document management system with email ingestion,
+      ingestion folder watching, and optional S3 document storage. '
+    digest: a1209e024a975c5e20eb8ca384c52061a134e61452d3ddb722e76ee114b6c481
+    home: https://papra.app
+    keywords:
+    - document-management
+    - paperless
+    - email-ingestion
+    name: papra
+    sources:
+    - https://github.com/papra-hq/papra
+    type: application
+    urls:
+    - https://github.com/rintaun/homelab-charts/releases/download/papra-0.1.0/papra-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-05-02T18:37:40.297615153Z"
