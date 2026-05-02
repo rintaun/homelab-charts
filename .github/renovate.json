@@ -18,7 +18,9 @@
       // Works for any datasource — add the annotation to Chart.yaml to opt in.
       "description": "Update appVersion in Chart.yaml via inline Renovate annotation",
       "customType": "regex",
-      "fileMatch": ["^charts/[^/]+/Chart\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/[^/]+/Chart\\.yaml$/"
+      ],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\n]+)\\nappVersion: \"(?<currentValue>[^\"]+)\""
       ]
@@ -26,7 +28,9 @@
     {
       "description": "Update beets PyPI version in the Docker build arg",
       "customType": "regex",
-      "fileMatch": ["^docker/beets/Dockerfile$"],
+      "managerFilePatterns": [
+        "/^docker/beets/Dockerfile$/"
+      ],
       "matchStrings": ["ARG APP_VERSION=(?<currentValue>[\\d.]+)"],
       "datasourceTemplate": "pypi",
       "packageNameTemplate": "beets",
