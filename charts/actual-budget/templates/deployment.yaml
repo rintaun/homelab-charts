@@ -37,36 +37,36 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
-            {{- with .Values.actual.loginMethod }}
+            {{- with .Values.config.loginMethod }}
             - name: ACTUAL_LOGIN_METHOD
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.actual.allowedLoginMethods }}
+            {{- with .Values.config.allowedLoginMethods }}
             - name: ACTUAL_ALLOWED_LOGIN_METHODS
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.actual.openid.discoveryUrl }}
+            {{- with .Values.config.openid.discoveryUrl }}
             - name: ACTUAL_OPENID_DISCOVERY_URL
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.actual.openid.clientId }}
+            {{- with .Values.config.openid.clientId }}
             - name: ACTUAL_OPENID_CLIENT_ID
               value: {{ . | quote }}
             {{- end }}
-            {{- if or .Values.actual.openid.clientId .Values.actual.openid.discoveryUrl }}
+            {{- if or .Values.config.openid.clientId .Values.config.openid.discoveryUrl }}
             - name: ACTUAL_OPENID_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ include "actual-budget.secretName" . }}
                   key: oidc-client-secret
             {{- end }}
-            {{- with (default (printf "https://%s" .Values.ingress.host) .Values.actual.openid.serverHostname) }}
+            {{- with (default (printf "https://%s" .Values.ingress.host) .Values.config.openid.serverHostname) }}
             {{- if and . (not (eq . "https://")) }}
             - name: ACTUAL_OPENID_SERVER_HOSTNAME
               value: {{ . | quote }}
             {{- end }}
             {{- end }}
-            {{- if eq .Values.actual.loginMethod "password" }}
+            {{- if eq .Values.config.loginMethod "password" }}
             - name: ACTUAL_SERVER_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -74,23 +74,23 @@ spec:
                   key: server-password
                   optional: true
             {{- end }}
-            {{- with .Values.actual.uploadFileSizeLimitMb }}
+            {{- with .Values.config.uploadFileSizeLimitMb }}
             - name: ACTUAL_UPLOAD_FILE_SIZE_LIMIT_MB
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.actual.uploadFileSyncSizeLimitMb }}
+            {{- with .Values.config.uploadFileSyncSizeLimitMb }}
             - name: ACTUAL_UPLOAD_FILE_SYNC_SIZE_LIMIT_MB
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.actual.uploadSyncEncryptedFileSyncSizeLimitMb }}
+            {{- with .Values.config.uploadSyncEncryptedFileSyncSizeLimitMb }}
             - name: ACTUAL_UPLOAD_SYNC_ENCRYPTED_FILE_SYNC_SIZE_LIMIT_MB
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.actual.trustedProxies }}
+            {{- with .Values.config.trustedProxies }}
             - name: ACTUAL_TRUSTED_PROXIES
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.actual.trustedAuthProxies }}
+            {{- with .Values.config.trustedAuthProxies }}
             - name: ACTUAL_TRUSTED_AUTH_PROXIES
               value: {{ . | quote }}
             {{- end }}

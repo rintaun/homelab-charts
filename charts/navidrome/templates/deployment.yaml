@@ -43,32 +43,32 @@ spec:
               value: "/music"
             - name: ND_DATAFOLDER
               value: "/data"
-            {{- with .Values.navidrome.logLevel }}
+            {{- with .Values.config.logLevel }}
             - name: ND_LOGLEVEL
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.navidrome.scanSchedule }}
+            {{- with .Values.config.scanSchedule }}
             - name: ND_SCANSCHEDULE
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.navidrome.transcodingCacheSize }}
+            {{- with .Values.config.transcodingCacheSize }}
             - name: ND_TRANSCODINGCACHESIZE
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.navidrome.imageCacheSize }}
+            {{- with .Values.config.imageCacheSize }}
             - name: ND_IMAGECACHESIZE
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.navidrome.extAuth.trustedSources }}
+            {{- with .Values.config.extAuth.trustedSources }}
             - name: ND_EXTAUTH_TRUSTEDSOURCES
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.navidrome.extAuth.userHeader }}
+            {{- with .Values.config.extAuth.userHeader }}
             - name: ND_EXTAUTH_USERHEADER
               value: {{ . | quote }}
             {{- end }}
             - name: ND_ENABLEUSEREDITING
-              value: {{ .Values.navidrome.extAuth.enableUserEditing | quote }}
+              value: {{ .Values.config.extAuth.enableUserEditing | quote }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           livenessProbe:

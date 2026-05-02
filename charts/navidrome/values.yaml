@@ -48,7 +48,7 @@ securityContext:
 env:
   TZ: "UTC"
 
-navidrome:
+config:
   # logLevel sets ND_LOGLEVEL. One of: trace, debug, info, warn, error, fatal.
   logLevel: "info"
   # scanSchedule sets ND_SCANSCHEDULE (cron expression or @every duration).

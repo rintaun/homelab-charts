@@ -48,7 +48,7 @@ securityContext:
 env:
   TZ: "UTC"
 
-actual:
+config:
   # loginMethod sets ACTUAL_LOGIN_METHOD. One of: "password", "header", "openid".
   loginMethod: ""
   # allowedLoginMethods sets ACTUAL_ALLOWED_LOGIN_METHODS (comma-separated).
