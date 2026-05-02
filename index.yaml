@@ -3,6 +3,24 @@ entries:
   actual-budget:
   - apiVersion: v2
     appVersion: 26.4.0
+    created: "2026-05-02T20:53:36.092420969Z"
+    description: 'Helm chart for Actual Budget — a local-first personal finance tool
+      with optional OpenID Connect authentication. '
+    digest: c2fac25f78042e68af336ee2c32ad2937515602e519daa437d75f2a302c83360
+    home: https://actualbudget.org
+    keywords:
+    - finance
+    - budget
+    - personal-finance
+    name: actual-budget
+    sources:
+    - https://github.com/actualbudget/actual
+    type: application
+    urls:
+    - https://github.com/rintaun/homelab-charts/releases/download/actual-budget-0.1.1/actual-budget-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
+    appVersion: 26.4.0
     created: "2026-05-02T18:37:39.92078072Z"
     description: 'Helm chart for Actual Budget — a local-first personal finance tool
       with optional OpenID Connect authentication. '
@@ -20,6 +38,26 @@ entries:
     - https://github.com/rintaun/homelab-charts/releases/download/actual-budget-0.1.0/actual-budget-0.1.0.tgz
     version: 0.1.0
   beets:
+  - apiVersion: v2
+    appVersion: 2.10.0
+    created: "2026-05-02T20:53:36.252216566Z"
+    description: 'Helm chart for beets — the music geek''s media organizer. Runs as
+      a Kubernetes CronJob to periodically import and tag new music files. '
+    digest: ef8a0e682f3145c09d78f027358b1fc27b463a13e5efdb62bdc928d5319604c5
+    home: https://beets.io
+    keywords:
+    - music
+    - media
+    - tagging
+    - cronjob
+    name: beets
+    sources:
+    - https://github.com/beetbox/beets
+    - https://github.com/rintaun/homelab-charts/tree/main/docker/beets
+    type: application
+    urls:
+    - https://github.com/rintaun/homelab-charts/releases/download/beets-0.2.1/beets-0.2.1.tgz
+    version: 0.2.1
   - apiVersion: v2
     appVersion: 2.10.0
     created: "2026-05-02T19:33:42.071266534Z"
@@ -63,6 +101,25 @@ entries:
   navidrome:
   - apiVersion: v2
     appVersion: 0.61.2
+    created: "2026-05-02T20:53:36.401421394Z"
+    description: 'Helm chart for Navidrome — a self-hosted music server and streamer
+      compatible with the Subsonic/Airsonic API. '
+    digest: b91a201fbbd392ad47cabea12788c3e31334cea036323f1dbcc963eee33f9d35
+    home: https://www.navidrome.org
+    keywords:
+    - music
+    - streaming
+    - subsonic
+    - media-server
+    name: navidrome
+    sources:
+    - https://github.com/navidrome/navidrome
+    type: application
+    urls:
+    - https://github.com/rintaun/homelab-charts/releases/download/navidrome-0.1.1/navidrome-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
+    appVersion: 0.61.2
     created: "2026-05-02T18:37:40.157054699Z"
     description: 'Helm chart for Navidrome — a self-hosted music server and streamer
       compatible with the Subsonic/Airsonic API. '
@@ -81,6 +138,23 @@ entries:
     - https://github.com/rintaun/homelab-charts/releases/download/navidrome-0.1.0/navidrome-0.1.0.tgz
     version: 0.1.0
   papra:
+  - apiVersion: v2
+    appVersion: 26.4.0
+    created: "2026-05-02T20:53:36.554187564Z"
+    description: 'Helm chart for Papra — a document management system with ingestion
+      folder watching and optional S3 document storage. '
+    digest: 6fc6fbee09bc18def38ccc1a089cc1449e3163aeb8ddd7887e13d3cf96a2da9f
+    home: https://papra.app
+    keywords:
+    - document-management
+    - paperless
+    name: papra
+    sources:
+    - https://github.com/papra-hq/papra
+    type: application
+    urls:
+    - https://github.com/rintaun/homelab-charts/releases/download/papra-0.2.1/papra-0.2.1.tgz
+    version: 0.2.1
   - apiVersion: v2
     appVersion: 26.4.0
     created: "2026-05-02T19:27:15.84419123Z"
@@ -116,4 +190,4 @@ entries:
     urls:
     - https://github.com/rintaun/homelab-charts/releases/download/papra-0.1.0/papra-0.1.0.tgz
     version: 0.1.0
-generated: "2026-05-02T19:33:42.071277645Z"
+generated: "2026-05-02T20:53:36.554222186Z"
