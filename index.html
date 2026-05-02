@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rintaun/homelab-charts</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --code-bg: #1f2937;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 760px; margin: 0 auto; }
+    h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--muted); margin-bottom: 2rem; }
+    h2 { font-size: 1.1rem; margin: 2rem 0 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-size: 0.875rem;
+    }
+    code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+    table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.9rem; }
+    th { text-align: left; color: var(--muted); font-weight: 600; padding: 0.4rem 0.75rem; border-bottom: 1px solid var(--border); }
+    td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .pill {
+      display: inline-block;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-size: 0.8rem;
+      font-family: monospace;
+    }
+    footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>rintaun/homelab-charts</h1>
+    <p class="subtitle">A Helm chart repository for self-hosted applications.</p>
+
+    <h2>Usage</h2>
+    <pre><code>helm repo add rintaun https://rintaun.github.io/homelab-charts
+helm repo update
+helm search repo rintaun</code></pre>
+
+    <h2>Charts</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Chart</th>
+          <th>Version</th>
+          <th>App version</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><a href="https://github.com/rintaun/homelab-charts/tree/main/charts/actual-budget">actual-budget</a></td>
+          <td><span class="pill">0.1.0</span></td>
+          <td><span class="pill">26.4.0</span></td>
+          <td>Local-first personal finance tool with optional OpenID Connect authentication.</td>
+        </tr>
+        <tr>
+          <td><a href="https://github.com/rintaun/homelab-charts/tree/main/charts/beets">beets</a></td>
+          <td><span class="pill">0.1.0</span></td>
+          <td><span class="pill">2.10.0</span></td>
+          <td>Music library organiser and tagger, runs as a Kubernetes CronJob.</td>
+        </tr>
+        <tr>
+          <td><a href="https://github.com/rintaun/homelab-charts/tree/main/charts/navidrome">navidrome</a></td>
+          <td><span class="pill">0.1.0</span></td>
+          <td><span class="pill">0.61.2</span></td>
+          <td>Self-hosted music server and streamer compatible with the Subsonic/Airsonic API.</td>
+        </tr>
+        <tr>
+          <td><a href="https://github.com/rintaun/homelab-charts/tree/main/charts/papra">papra</a></td>
+          <td><span class="pill">0.1.0</span></td>
+          <td><span class="pill">26.4.0</span></td>
+          <td>Document management system with email ingestion and optional S3 storage.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Source</h2>
+    <p>
+      <a href="https://github.com/rintaun/homelab-charts">github.com/rintaun/homelab-charts</a>
+      &mdash; contributions and issues welcome.
+    </p>
+
+    <footer>
+      Helm index is served from this page. Add with
+      <code>helm repo add rintaun https://rintaun.github.io/homelab-charts</code>
+    </footer>
+  </div>
+</body>
+</html>
