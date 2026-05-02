@@ -63,6 +63,10 @@ failedJobsHistoryLimit: 3
 # This path must exist within the media volume mount (/media).
 importDir: /media/import
 
+# importArgs is a list of extra arguments passed to `beet import` after the importDir.
+# Examples: ["-v"] for verbose output, ["--nowrite"] to skip tag writing.
+importArgs: []
+
 resources:
   requests:
     cpu: 100m

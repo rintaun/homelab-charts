@@ -42,3 +42,16 @@ tests:
       - matchRegex:
           path: spec.jobTemplate.spec.template.spec.containers[0].image
           pattern: "ghcr.io/rintaun/beets:2.10.0"
+
+  - it: should pass importArgs to the container args
+    set:
+      importDir: /media/import
+      importArgs:
+        - "-v"
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].args
+          value:
+            - import
+            - /media/import
+            - "-v"
