@@ -148,62 +148,6 @@ oidcSecret:
   # clientSecrets is used when create=true. Map of providerId -> clientSecret.
   clientSecrets: {}
 
-# webhookBridge deploys a sidecar HTTP server that receives incoming emails from
-# ForwardEmail.net webhooks and forwards them to Papra's intake-email ingest endpoint.
-#
-# Configure your ForwardEmail alias to forward to https://<ingress.host><webhookBridge.ingressPath>.
-#
-# When enabled=true the main Papra container automatically gains:
-#   INTAKE_EMAILS_IS_ENABLED=true
-#   INTAKE_EMAILS_DRIVER / INTAKE_EMAILS_CATCH_ALL_DOMAIN
-#   INTAKE_EMAILS_WEBHOOK_SECRET  (shared HMAC key with the bridge)
-webhookBridge:
-  # enabled deploys the webhook bridge sidecar when true.
-  enabled: false
-
-  image:
-    # repository is the webhook bridge container image.
-    repository: ghcr.io/rintaun/papra-imap-bridge
-    tag: "latest"
-    pullPolicy: IfNotPresent
-
-  # port is the port the webhook receiver listens on inside the pod.
-  port: 3001
-
-  # intakeEmails configures the Papra side of the intake pipeline.
-  intakeEmails:
-    # driver is passed as INTAKE_EMAILS_DRIVER to Papra.
-    # "catch-all" is fully self-contained; "owlrelay" requires an OwlRelay API key.
-    driver: catch-all
-    # catchAllDomain is required when driver=catch-all (INTAKE_EMAILS_CATCH_ALL_DOMAIN).
-    catchAllDomain: ""
-
-  # papraWebhookUrl overrides the Papra ingest endpoint the bridge POSTs to.
-  # Defaults to http://localhost:<service.port>/api/intake-emails/ingest (same pod).
-  papraWebhookUrl: ""
-
-  # ingressPath is the subpath on the main Papra ingress that routes to the webhook receiver.
-  # ForwardEmail should be configured to POST to https://<ingress.host><ingressPath>.
-  ingressPath: /api/intake-emails/forward-email
-
-  resources:
-    requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
-      memory: 128Mi
-
-  # secret configures how the bridge credentials are provided.
-  secret:
-    # create controls whether the chart creates the webhook bridge Secret.
-    create: false
-    # secretName overrides the generated Secret name when set.
-    # Defaults to <fullname>-webhook-bridge when empty.
-    secretName: ""
-    # forwardEmailWebhookKey and webhookSecret are used when create=true.
-    forwardEmailWebhookKey: ""
-    webhookSecret: ""
-
 # ingestionFolder configures Papra's built-in ingestion folder feature.
 # Papra watches <mountPath>/<org-id>/ for files to automatically ingest.
 # Find your org ID in the Papra UI under Settings → Organization.

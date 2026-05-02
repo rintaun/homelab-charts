@@ -119,14 +119,6 @@ The OIDC_*_CLIENT_SECRET env vars must be defined before this one in the contain
 {{- end }}
 
 {{/*
-Name of the Secret that holds webhook bridge credentials.
-Uses webhookBridge.secret.secretName when set, otherwise defaults to <fullname>-webhook-bridge.
-*/}}
-{{- define "papra.webhookBridgeSecretName" -}}
-{{- default (printf "%s-webhook-bridge" (include "papra.fullname" .)) .Values.webhookBridge.secret.secretName }}
-{{- end }}
-
-{{/*
 Name of the PersistentVolumeClaim used for the ingestion folder.
 - If ingestionFolder.existingClaimName is set, uses that.
 - Otherwise uses the chart fullname suffixed with "-ingestion".

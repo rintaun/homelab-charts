@@ -1,16 +1,15 @@
 apiVersion: v2
 name: papra
 type: application
-version: 0.1.0
+version: 0.2.0
 appVersion: "26.4.0"
 description: >
-  Helm chart for Papra — a document management system with email ingestion,
-  ingestion folder watching, and optional S3 document storage.
+  Helm chart for Papra — a document management system with ingestion folder
+  watching and optional S3 document storage.
 home: https://papra.app
 sources:
   - https://github.com/papra-hq/papra
 keywords:
   - document-management
   - paperless
-  - email-ingestion
 dependencies: []
