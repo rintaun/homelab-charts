@@ -27,7 +27,11 @@ jobs:
           changed=$(ct list-changed --config ct.yaml)
           if [[ -n "$changed" ]]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "charts=$changed" >> "$GITHUB_OUTPUT"
+            {
+              echo "charts<<EOF"
+              echo "$changed"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run chart-testing (lint)
