@@ -1,0 +1,106 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "navidrome.fullname" . }}
+  labels:
+    {{- include "navidrome.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "navidrome.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "navidrome.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "navidrome.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "navidrome.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            - name: ND_PORT
+              value: {{ .Values.service.port | quote }}
+            - name: ND_MUSICFOLDER
+              value: "/music"
+            - name: ND_DATAFOLDER
+              value: "/data"
+            {{- with .Values.navidrome.logLevel }}
+            - name: ND_LOGLEVEL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.navidrome.scanSchedule }}
+            - name: ND_SCANSCHEDULE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.navidrome.transcodingCacheSize }}
+            - name: ND_TRANSCODINGCACHESIZE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.navidrome.imageCacheSize }}
+            - name: ND_IMAGECACHESIZE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.navidrome.enableUserEditing }}
+            - name: ND_ENABLEUSEREDITING
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.navidrome.extAuth.trustedSources }}
+            - name: ND_EXTAUTH_TRUSTEDSOURCES
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.navidrome.extAuth.userHeader }}
+            - name: ND_EXTAUTH_USERHEADER
+              value: {{ . | quote }}
+            {{- end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - mountPath: /data
+              name: data
+            - mountPath: /music
+              name: music
+              {{- with .Values.persistence.music.subPath }}
+              subPath: {{ . }}
+              {{- end }}
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "navidrome.fullname" . }}-data
+        - name: music
+          persistentVolumeClaim:
+            claimName: {{ include "navidrome.musicClaimName" . }}

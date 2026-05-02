@@ -1,0 +1,32 @@
+{{- if and .Values.rbac.create .Values.oidcMiddleware.providerURL }}
+---
+# Grant Traefik's ServiceAccount read access to the Navidrome secret so the traefikoidc
+# plugin can resolve urn:k8s:secret references for the client secret and session key.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "navidrome.fullname" . }}-traefik-secret-reader
+  labels:
+    {{- include "navidrome.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames:
+      - {{ include "navidrome.secretName" . }}
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "navidrome.fullname" . }}-traefik-secret-reader
+  labels:
+    {{- include "navidrome.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "navidrome.fullname" . }}-traefik-secret-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.rbac.traefikServiceAccountName }}
+    namespace: {{ .Values.rbac.traefikNamespace }}
+{{- end }}

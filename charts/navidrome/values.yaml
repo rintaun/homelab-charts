@@ -1,0 +1,184 @@
+# nameOverride replaces the chart name in resource names when set.
+nameOverride: ""
+# fullnameOverride replaces the fully-qualified release name when set.
+fullnameOverride: ""
+
+# replicaCount is the number of pod replicas to run.
+replicaCount: 1
+
+image:
+  # repository is the container image repository.
+  repository: ghcr.io/navidrome/navidrome
+  # tag overrides the chart appVersion when set.
+  tag: ""
+  # digest pins to an immutable image reference. Prepend sha256: or omit the prefix.
+  digest: ""
+  # pullPolicy is the image pull policy.
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  # create specifies whether a ServiceAccount should be created.
+  create: true
+  # annotations to add to the ServiceAccount.
+  annotations: {}
+  # name overrides the generated name when set.
+  name: ""
+
+# podAnnotations are extra annotations added to the pod.
+podAnnotations: {}
+
+# podSecurityContext sets the security context for the pod.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# securityContext sets the security context for the navidrome container.
+# readOnlyRootFilesystem is false because navidrome writes transcoding cache to its data dir.
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop: ["ALL"]
+
+# env contains extra environment variables injected into the container.
+env:
+  TZ: "UTC"
+
+navidrome:
+  # logLevel sets ND_LOGLEVEL. One of: trace, debug, info, warn, error, fatal.
+  logLevel: "info"
+  # scanSchedule sets ND_SCANSCHEDULE (cron expression or @every duration).
+  # Leave empty to use Navidrome's default (automatic scan on startup + when files change).
+  scanSchedule: ""
+  # transcodingCacheSize sets ND_TRANSCODINGCACHESIZE (e.g. "100MB", "1GB").
+  # Leave empty to use Navidrome's default (100MB).
+  transcodingCacheSize: ""
+  # imageCacheSize sets ND_IMAGECACHESIZE (e.g. "100MB", "1GB").
+  # Leave empty to use Navidrome's default (100MB).
+  imageCacheSize: ""
+  extAuth:
+    # trustedSources sets ND_EXTAUTH_TRUSTEDSOURCES (CIDR notation).
+    # Set to the CIDR of your reverse proxy so Navidrome trusts the injected user header.
+    # Leave empty to disable external auth header trust.
+    trustedSources: ""
+    # userHeader sets ND_EXTAUTH_USERHEADER (default: Remote-User).
+    userHeader: "Remote-User"
+    # enableUserEditing sets ND_ENABLEUSEREDITING.
+    # Set to false when user management is delegated to an OIDC provider.
+    enableUserEditing: true
+
+# oidcMiddleware configures an optional Traefik traefikoidc Middleware for this app.
+# When providerURL is set, a Middleware resource is created and the chart assumes
+# Traefik is handling OIDC authentication in front of Navidrome.
+# Leave providerURL empty to skip Middleware creation.
+oidcMiddleware:
+  # providerURL is the OIDC issuer URL (used for discovery). Leave empty to disable.
+  providerURL: ""
+  # clientId is the OAuth2 client ID.
+  clientId: ""
+  # callbackURL is the path Traefik uses for the OIDC callback.
+  callbackURL: "/oauth2/callback"
+  # excludedURLs lists path prefixes that bypass authentication.
+  # /rest/ is the Subsonic API (clients authenticate directly with Navidrome credentials).
+  # /share/ is for public share links.
+  excludedURLs:
+    - /rest/
+    - /share/
+  # cookieDomain sets the cookie scope. Leave empty to use the request hostname.
+  cookieDomain: ""
+  # sessionMaxAge is the session lifetime in seconds (default: 86400 = 24h).
+  sessionMaxAge: 86400
+  # userClaim is the OIDC claim injected as the user identity header into Navidrome.
+  userClaim: "preferred_username"
+
+# secret holds OIDC client secret and session encryption key for the traefikoidc Middleware.
+# Only needed when oidcMiddleware.providerURL is set.
+secret:
+  # create controls whether the chart creates the Secret.
+  # Defaults to false — provide a pre-existing Secret via secretName instead,
+  # or set create=true and supply values below only for local/dev use.
+  create: false
+  # secretName overrides the generated Secret name when set.
+  # When create=false, this must name the pre-existing Secret to use.
+  # Defaults to the chart fullname when empty.
+  secretName: ""
+  # oidcClientSecret is the OAuth2 client secret (used when create=true).
+  oidcClientSecret: ""
+  # sessionEncryptionKey is a random string >=32 bytes for cookie encryption (used when create=true).
+  sessionEncryptionKey: ""
+
+rbac:
+  # create controls whether Role and RoleBinding resources are created.
+  create: true
+  traefik:
+    # serviceAccountName is the Traefik ServiceAccount name.
+    serviceAccountName: traefik
+    # namespace is the namespace where Traefik is deployed.
+    namespace: traefik
+
+service:
+  # port is the port the navidrome container listens on.
+  port: 4533
+
+ingress:
+  # host is the DNS hostname to expose the service on. Leave empty to skip ingress creation.
+  host: ""
+  # className is the IngressClass to use. Empty string uses the cluster's default IngressClass.
+  className: ""
+  # annotations are added to the Ingress resource metadata.
+  annotations: {}
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+persistence:
+  # data is the PVC for Navidrome's database and transcoding cache.
+  data:
+    # storageClass is the Kubernetes StorageClass to use. Empty string uses the cluster default.
+    storageClass: ""
+    # size is the storage capacity requested.
+    size: 5Gi
+
+  # music is the volume for the music library (typically large, read-only).
+  music:
+    # existingClaimName uses a pre-existing PVC instead of creating one.
+    # When set, claim and volume below are ignored entirely.
+    existingClaimName: ""
+
+    # claim configures the PVC created by this chart.
+    # Ignored when existingClaimName is set.
+    claim:
+      # storageClass is the StorageClass to use. Empty string uses the cluster default.
+      storageClass: ""
+      # accessModes are the PVC access modes.
+      accessModes:
+        - ReadOnlyMany
+      # size is the requested storage capacity.
+      size: 200Gi
+      # volumeName explicitly binds the PVC to a specific PV by name.
+      # Automatically set to the chart-managed PV when volume.nfs.server is configured.
+      volumeName: ""
+
+    # volume creates a static PersistentVolume bound to the chart's music PVC.
+    # Set volume.nfs.server to enable PV creation; leave empty to skip.
+    volume:
+      nfs:
+        # server is the NFS server hostname or IP. Leave empty to skip PV creation.
+        server: ""
+        # path is the exported NFS path.
+        path: ""
+        mountOptions:
+          - hard
+          - nfsvers=4
+
+    # subPath is the subdirectory within the volume to mount as the music root.
+    # Useful when the volume contains multiple media types.
+    subPath: ""

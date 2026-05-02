@@ -1,0 +1,17 @@
+apiVersion: v2
+name: navidrome
+type: application
+version: 0.1.0
+appVersion: "0.61.2"
+description: >
+  Helm chart for Navidrome — a self-hosted music server and streamer
+  compatible with the Subsonic/Airsonic API.
+home: https://www.navidrome.org
+sources:
+  - https://github.com/navidrome/navidrome
+keywords:
+  - music
+  - streaming
+  - subsonic
+  - media-server
+dependencies: []
