@@ -2,7 +2,7 @@ suite: papra ingress tests
 templates:
   - ingress.yaml
 tests:
-  - it: should render Ingress by default (enabled: true)
+  - it: "should render Ingress by default (enabled: true)"
     set:
       ingress.enabled: true
       ingress.host: papra.example.com
