@@ -108,69 +108,37 @@ config:
 
 # secret configures the AUTH_SECRET credential.
 secret:
-  # mode controls how the secret is provided. One of:
-  #   "external" - create an ExternalSecret (requires external-secrets operator)
-  #   "create"   - create a plain Secret from secret.authSecret below
-  #   "existing" - use a pre-existing Secret; set secret.existingSecretName
-  mode: external
-  # existingSecretName is used when mode=existing.
-  existingSecretName: ""
-  # authSecret is used when mode=create. Must be at least 32 characters.
+  # create controls whether the chart creates the Secret.
+  # Set to false to use a pre-existing Secret (e.g. one managed by external-secrets).
+  create: true
+  # secretName overrides the generated Secret name when set.
+  # When create=false, this must name the pre-existing Secret to use.
+  # Defaults to the chart fullname when empty.
+  secretName: ""
+  # authSecret is used when create=true. Must be at least 32 characters.
   authSecret: ""
-
-# externalSecret configures the ExternalSecret for AUTH_SECRET (used when secret.mode=external).
-externalSecret:
-  # secretStoreName is the name of the ESO SecretStore or ClusterSecretStore.
-  secretStoreName: ""
-  secretStoreKind: ClusterSecretStore
-  refreshInterval: 1h
-  remoteRef:
-    key: secret/papra
-    property: authSecret
 
 # s3Secret configures the S3 credentials (only used when config.storage.driver=s3).
 s3Secret:
-  # mode controls how the S3 secret is provided. Same options as secret.mode.
-  mode: external
-  # existingSecretName is used when mode=existing.
-  existingSecretName: ""
-  # accessKeyId and secretAccessKey are used when mode=create.
+  # create controls whether the chart creates the S3 Secret.
+  create: true
+  # secretName overrides the generated Secret name when set.
+  # Defaults to <fullname>-s3 when empty.
+  secretName: ""
+  # accessKeyId and secretAccessKey are used when create=true.
   accessKeyId: ""
   secretAccessKey: ""
 
-# s3ExternalSecret configures the ExternalSecret for S3 credentials (used when s3Secret.mode=external).
-s3ExternalSecret:
-  # secretStoreName is the name of the ESO SecretStore or ClusterSecretStore.
-  secretStoreName: ""
-  secretStoreKind: ClusterSecretStore
-  refreshInterval: 1h
-  remoteRef:
-    key: secret/papra
-    accessKeyIdProperty: s3AccessKeyId
-    secretAccessKeyProperty: s3SecretAccessKey
-
 # oidcSecret configures how custom OAuth provider client secrets are provided.
 # The generated Secret holds one key per provider: <providerId>-client-secret.
-# Same modes as secret.mode: "external", "create", or "existing".
 oidcSecret:
-  mode: external
-  # existingSecretName is used when mode=existing.
-  existingSecretName: ""
-  # clientSecrets is used when mode=create. Map of providerId -> clientSecret.
+  # create controls whether the chart creates the OIDC Secret.
+  create: true
+  # secretName overrides the generated Secret name when set.
+  # Defaults to <fullname>-oidc when empty.
+  secretName: ""
+  # clientSecrets is used when create=true. Map of providerId -> clientSecret.
   clientSecrets: {}
-
-# oidcExternalSecret configures the ExternalSecret for custom OAuth client secrets.
-# Used when oidcSecret.mode=external.
-oidcExternalSecret:
-  # secretStoreName is the name of the ESO SecretStore or ClusterSecretStore.
-  secretStoreName: ""
-  secretStoreKind: ClusterSecretStore
-  refreshInterval: 1h
-  remoteRef:
-    key: secret/papra
-    # clientSecretProperties maps providerId -> secret store property name for that provider's client secret.
-    # Example: { my-provider: myProviderOidcClientSecret }
-    clientSecretProperties: {}
 
 # webhookBridge deploys a sidecar HTTP server that receives incoming emails from
 # ForwardEmail.net webhooks and forwards them to Papra's intake-email ingest endpoint.
@@ -218,25 +186,15 @@ webhookBridge:
       memory: 128Mi
 
   # secret configures how the bridge credentials are provided.
-  # Same modes as the main secret: "external", "create", or "existing".
   secret:
-    mode: external
-    # existingSecretName is used when mode=existing.
-    existingSecretName: ""
-    # forwardEmailWebhookKey and webhookSecret are used when mode=create.
+    # create controls whether the chart creates the webhook bridge Secret.
+    create: true
+    # secretName overrides the generated Secret name when set.
+    # Defaults to <fullname>-webhook-bridge when empty.
+    secretName: ""
+    # forwardEmailWebhookKey and webhookSecret are used when create=true.
     forwardEmailWebhookKey: ""
     webhookSecret: ""
-
-  # externalSecret configures the ExternalSecret for bridge credentials (used when secret.mode=external).
-  externalSecret:
-    # secretStoreName is the name of the ESO SecretStore or ClusterSecretStore.
-    secretStoreName: ""
-    secretStoreKind: ClusterSecretStore
-    refreshInterval: 1h
-    remoteRef:
-      key: secret/papra
-      forwardEmailWebhookKeyProperty: webhookBridgeForwardEmailKey
-      webhookSecretProperty: webhookBridgeWebhookSecret
 
 # ingestionFolder configures Papra's built-in ingestion folder feature.
 # Papra watches <mountPath>/<org-id>/ for files to automatically ingest.

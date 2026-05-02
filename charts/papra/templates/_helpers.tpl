@@ -80,41 +80,26 @@ Create the name of the service account to use.
 
 {{/*
 Name of the Secret that holds AUTH_SECRET.
-- mode=existing: uses secret.existingSecretName (required)
-- mode=create or mode=external: uses the chart fullname
+Uses secret.secretName when set, otherwise defaults to the chart fullname.
 */}}
 {{- define "papra.secretName" -}}
-{{- if eq .Values.secret.mode "existing" }}
-{{- required "secret.existingSecretName is required when secret.mode is \"existing\"" .Values.secret.existingSecretName }}
-{{- else }}
-{{- include "papra.fullname" . }}
-{{- end }}
+{{- default (include "papra.fullname" .) .Values.secret.secretName }}
 {{- end }}
 
 {{/*
 Name of the Secret that holds S3 credentials.
-- mode=existing: uses s3Secret.existingSecretName (required)
-- mode=create or mode=external: uses the chart fullname suffixed with "-s3"
+Uses s3Secret.secretName when set, otherwise defaults to <fullname>-s3.
 */}}
 {{- define "papra.s3SecretName" -}}
-{{- if eq .Values.s3Secret.mode "existing" }}
-{{- required "s3Secret.existingSecretName is required when s3Secret.mode is \"existing\"" .Values.s3Secret.existingSecretName }}
-{{- else }}
-{{- printf "%s-s3" (include "papra.fullname" .) }}
-{{- end }}
+{{- default (printf "%s-s3" (include "papra.fullname" .)) .Values.s3Secret.secretName }}
 {{- end }}
 
 {{/*
 Name of the Secret that holds custom OAuth provider client secrets.
-- mode=existing: uses oidcSecret.existingSecretName (required)
-- mode=create or mode=external: uses the chart fullname suffixed with "-oidc"
+Uses oidcSecret.secretName when set, otherwise defaults to <fullname>-oidc.
 */}}
 {{- define "papra.oidcSecretName" -}}
-{{- if eq .Values.oidcSecret.mode "existing" }}
-{{- required "oidcSecret.existingSecretName is required when oidcSecret.mode is \"existing\"" .Values.oidcSecret.existingSecretName }}
-{{- else }}
-{{- printf "%s-oidc" (include "papra.fullname" .) }}
-{{- end }}
+{{- default (printf "%s-oidc" (include "papra.fullname" .)) .Values.oidcSecret.secretName }}
 {{- end }}
 
 {{/*
@@ -134,16 +119,11 @@ The OIDC_*_CLIENT_SECRET env vars must be defined before this one in the contain
 {{- end }}
 
 {{/*
-Name of the Secret that holds webhook bridge credentials (forwardemail-webhook-key, webhook-secret).
-- mode=existing: uses webhookBridge.secret.existingSecretName (required)
-- mode=create or mode=external: uses the chart fullname suffixed with "-webhook-bridge"
+Name of the Secret that holds webhook bridge credentials.
+Uses webhookBridge.secret.secretName when set, otherwise defaults to <fullname>-webhook-bridge.
 */}}
 {{- define "papra.webhookBridgeSecretName" -}}
-{{- if eq .Values.webhookBridge.secret.mode "existing" }}
-{{- required "webhookBridge.secret.existingSecretName is required when webhookBridge.secret.mode is \"existing\"" .Values.webhookBridge.secret.existingSecretName }}
-{{- else }}
-{{- printf "%s-webhook-bridge" (include "papra.fullname" .) }}
-{{- end }}
+{{- default (printf "%s-webhook-bridge" (include "papra.fullname" .)) .Values.webhookBridge.secret.secretName }}
 {{- end }}
 
 {{/*

@@ -80,13 +80,8 @@ Create the name of the service account to use.
 
 {{/*
 Name of the Secret holding Actual Budget credentials.
-- mode=existing: uses secret.existingSecretName (required)
-- mode=create or mode=external: uses the chart fullname
+Uses secret.secretName when set, otherwise defaults to the chart fullname.
 */}}
 {{- define "actual-budget.secretName" -}}
-{{- if eq .Values.secret.mode "existing" }}
-{{- required "secret.existingSecretName is required when secret.mode is \"existing\"" .Values.secret.existingSecretName }}
-{{- else }}
-{{- include "actual-budget.fullname" . }}
-{{- end }}
+{{- default (include "actual-budget.fullname" .) .Values.secret.secretName }}
 {{- end }}
