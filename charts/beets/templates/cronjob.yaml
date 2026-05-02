@@ -33,7 +33,8 @@ spec:
               imagePullPolicy: {{ .Values.image.pullPolicy }}
               # Import all files in the staging directory. beets skips files already
               # in the library (tracked by library.db), so re-running is safe.
-              args: ["import", {{ .Values.importDir | quote }}{{- range .Values.importArgs }}, {{ . | quote }}{{- end }}]
+              # globalArgs go before the subcommand (e.g. -v for verbose); importArgs go after the importDir.
+              args: [{{- range .Values.globalArgs }}{{ . | quote }}, {{- end }}"import", {{ .Values.importDir | quote }}{{- range .Values.importArgs }}, {{ . | quote }}{{- end }}]
               env:
                 {{- range $key, $value := .Values.env }}
                 - name: {{ $key }}

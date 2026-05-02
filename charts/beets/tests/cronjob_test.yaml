@@ -43,18 +43,31 @@ tests:
           path: spec.jobTemplate.spec.template.spec.containers[0].image
           pattern: "ghcr.io/rintaun/beets:2.10.0"
 
+  - it: should pass globalArgs before the subcommand
+    set:
+      importDir: /media/import
+      globalArgs:
+        - "-v"
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].args
+          value:
+            - "-v"
+            - import
+            - /media/import
+
   - it: should pass importArgs to the container args
     set:
       importDir: /media/import
       importArgs:
-        - "-v"
+        - "--nowrite"
     asserts:
       - equal:
           path: spec.jobTemplate.spec.template.spec.containers[0].args
           value:
             - import
             - /media/import
-            - "-v"
+            - "--nowrite"
 
   - it: should include extraEnv in container env
     set:

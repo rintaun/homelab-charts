@@ -63,8 +63,11 @@ failedJobsHistoryLimit: 3
 # This path must exist within the media volume mount (/media).
 importDir: /media/import
 
+# globalArgs is a list of arguments passed to `beet` before the subcommand.
+# Examples: ["-v"] for verbose output.
+globalArgs: []
+
 # importArgs is a list of extra arguments passed to `beet import` after the importDir.
-# Examples: ["-v"] for verbose output, ["--nowrite"] to skip tag writing.
 importArgs: []
 
 # extraEnv is a list of additional environment variables for the beets container.
