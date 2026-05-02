@@ -1,0 +1,278 @@
+# nameOverride overrides the chart name used in resource names.
+nameOverride: ""
+# fullnameOverride overrides the full resource name (release-chart).
+fullnameOverride: ""
+
+# replicaCount is the number of pod replicas to run.
+replicaCount: 1
+
+image:
+  # repository is the container image repository.
+  repository: ghcr.io/papra-hq/papra
+  # tag overrides the chart appVersion when set.
+  tag: "26.4.0-rootless"
+  # digest pins to an immutable image reference. Prepend sha256: or omit the prefix.
+  digest: ""
+  # pullPolicy is the image pull policy.
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  # create specifies whether a ServiceAccount should be created.
+  create: true
+  # annotations to add to the ServiceAccount.
+  annotations: {}
+  # name overrides the generated name when set.
+  name: ""
+
+podAnnotations: {}
+
+# podSecurityContext sets the security context for the pod.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# securityContext sets the security context for the papra container.
+# readOnlyRootFilesystem is false because papra writes to /app/app-data at runtime.
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop: ["ALL"]
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+service:
+  # port is the HTTP port papra listens on.
+  port: 1221
+
+ingress:
+  # host is the fully-qualified hostname for the ingress. Leave empty to skip ingress creation.
+  host: ""
+  # className is the IngressClass to use. Empty string uses the cluster's default IngressClass.
+  className: ""
+  # annotations are added to the Ingress resource metadata.
+  annotations: {}
+
+# persistence configures the PVC for /app/app-data (SQLite DB + local document storage).
+persistence:
+  # storageClass is the Kubernetes storage class to use. Empty string uses the cluster default.
+  storageClass: ""
+  # size is the PVC capacity.
+  size: 20Gi
+
+config:
+  # appBaseUrl is the full public URL of the Papra instance (required).
+  appBaseUrl: ""
+  auth:
+    # isRegistrationEnabled controls whether new users can self-register.
+    isRegistrationEnabled: false
+    # firstUserAsAdmin promotes the first registered user to admin.
+    firstUserAsAdmin: true
+    # ipAddressHeaders lists headers used to determine the client IP (for reverse proxy setups).
+    ipAddressHeaders: x-forwarded-for
+    # customOAuthProviders configures custom OAuth/OIDC providers (AUTH_PROVIDERS_CUSTOMS).
+    # Client secrets are provided via oidcSecret/oidcExternalSecret below.
+    # See https://www.better-auth.com/docs/plugins/generic-oauth#configuration for field details.
+    # Example:
+    #   - id: my-provider
+    #     name: "My Provider"
+    #     clientId: "my-client-id"
+    #     discoveryUrl: "https://auth.example.com/.well-known/openid-configuration"
+    #     scopes:
+    #       - openid
+    #       - profile
+    #       - email
+    customOAuthProviders: []
+  storage:
+    # driver is the document storage backend. One of: "filesystem", "s3".
+    driver: filesystem
+    # s3 settings are only used when driver=s3.
+    s3:
+      # bucket is the S3 bucket name.
+      bucket: papra
+      # region is the S3 region.
+      region: us-east-1
+      # endpoint is the S3-compatible endpoint URL. Leave empty to use the default AWS endpoint.
+      endpoint: ""
+      # forcePathStyle enables path-style S3 addressing (required for MinIO and most self-hosted S3).
+      forcePathStyle: false
+
+# secret configures the AUTH_SECRET credential.
+secret:
+  # mode controls how the secret is provided. One of:
+  #   "external" - create an ExternalSecret (requires external-secrets operator)
+  #   "create"   - create a plain Secret from secret.authSecret below
+  #   "existing" - use a pre-existing Secret; set secret.existingSecretName
+  mode: external
+  # existingSecretName is used when mode=existing.
+  existingSecretName: ""
+  # authSecret is used when mode=create. Must be at least 32 characters.
+  authSecret: ""
+
+# externalSecret configures the ExternalSecret for AUTH_SECRET (used when secret.mode=external).
+externalSecret:
+  # secretStoreName is the name of the ESO SecretStore or ClusterSecretStore.
+  secretStoreName: ""
+  secretStoreKind: ClusterSecretStore
+  refreshInterval: 1h
+  remoteRef:
+    key: secret/papra
+    property: authSecret
+
+# s3Secret configures the S3 credentials (only used when config.storage.driver=s3).
+s3Secret:
+  # mode controls how the S3 secret is provided. Same options as secret.mode.
+  mode: external
+  # existingSecretName is used when mode=existing.
+  existingSecretName: ""
+  # accessKeyId and secretAccessKey are used when mode=create.
+  accessKeyId: ""
+  secretAccessKey: ""
+
+# s3ExternalSecret configures the ExternalSecret for S3 credentials (used when s3Secret.mode=external).
+s3ExternalSecret:
+  # secretStoreName is the name of the ESO SecretStore or ClusterSecretStore.
+  secretStoreName: ""
+  secretStoreKind: ClusterSecretStore
+  refreshInterval: 1h
+  remoteRef:
+    key: secret/papra
+    accessKeyIdProperty: s3AccessKeyId
+    secretAccessKeyProperty: s3SecretAccessKey
+
+# oidcSecret configures how custom OAuth provider client secrets are provided.
+# The generated Secret holds one key per provider: <providerId>-client-secret.
+# Same modes as secret.mode: "external", "create", or "existing".
+oidcSecret:
+  mode: external
+  # existingSecretName is used when mode=existing.
+  existingSecretName: ""
+  # clientSecrets is used when mode=create. Map of providerId -> clientSecret.
+  clientSecrets: {}
+
+# oidcExternalSecret configures the ExternalSecret for custom OAuth client secrets.
+# Used when oidcSecret.mode=external.
+oidcExternalSecret:
+  # secretStoreName is the name of the ESO SecretStore or ClusterSecretStore.
+  secretStoreName: ""
+  secretStoreKind: ClusterSecretStore
+  refreshInterval: 1h
+  remoteRef:
+    key: secret/papra
+    # clientSecretProperties maps providerId -> secret store property name for that provider's client secret.
+    # Example: { my-provider: myProviderOidcClientSecret }
+    clientSecretProperties: {}
+
+# webhookBridge deploys a sidecar HTTP server that receives incoming emails from
+# ForwardEmail.net webhooks and forwards them to Papra's intake-email ingest endpoint.
+#
+# Configure your ForwardEmail alias to forward to https://<ingress.host><webhookBridge.ingressPath>.
+#
+# When enabled=true the main Papra container automatically gains:
+#   INTAKE_EMAILS_IS_ENABLED=true
+#   INTAKE_EMAILS_DRIVER / INTAKE_EMAILS_CATCH_ALL_DOMAIN
+#   INTAKE_EMAILS_WEBHOOK_SECRET  (shared HMAC key with the bridge)
+webhookBridge:
+  # enabled deploys the webhook bridge sidecar when true.
+  enabled: false
+
+  image:
+    # repository is the webhook bridge container image.
+    repository: ghcr.io/rintaun/papra-imap-bridge
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  # port is the port the webhook receiver listens on inside the pod.
+  port: 3001
+
+  # intakeEmails configures the Papra side of the intake pipeline.
+  intakeEmails:
+    # driver is passed as INTAKE_EMAILS_DRIVER to Papra.
+    # "catch-all" is fully self-contained; "owlrelay" requires an OwlRelay API key.
+    driver: catch-all
+    # catchAllDomain is required when driver=catch-all (INTAKE_EMAILS_CATCH_ALL_DOMAIN).
+    catchAllDomain: ""
+
+  # papraWebhookUrl overrides the Papra ingest endpoint the bridge POSTs to.
+  # Defaults to http://localhost:<service.port>/api/intake-emails/ingest (same pod).
+  papraWebhookUrl: ""
+
+  # ingressPath is the subpath on the main Papra ingress that routes to the webhook receiver.
+  # ForwardEmail should be configured to POST to https://<ingress.host><ingressPath>.
+  ingressPath: /api/intake-emails/forward-email
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+  # secret configures how the bridge credentials are provided.
+  # Same modes as the main secret: "external", "create", or "existing".
+  secret:
+    mode: external
+    # existingSecretName is used when mode=existing.
+    existingSecretName: ""
+    # forwardEmailWebhookKey and webhookSecret are used when mode=create.
+    forwardEmailWebhookKey: ""
+    webhookSecret: ""
+
+  # externalSecret configures the ExternalSecret for bridge credentials (used when secret.mode=external).
+  externalSecret:
+    # secretStoreName is the name of the ESO SecretStore or ClusterSecretStore.
+    secretStoreName: ""
+    secretStoreKind: ClusterSecretStore
+    refreshInterval: 1h
+    remoteRef:
+      key: secret/papra
+      forwardEmailWebhookKeyProperty: webhookBridgeForwardEmailKey
+      webhookSecretProperty: webhookBridgeWebhookSecret
+
+# ingestionFolder configures Papra's built-in ingestion folder feature.
+# Papra watches <mountPath>/<org-id>/ for files to automatically ingest.
+# Find your org ID in the Papra UI under Settings → Organization.
+ingestionFolder:
+  # enabled turns on the ingestion folder watcher.
+  enabled: false
+
+  # mountPath is the path inside the Papra container where the share is mounted.
+  mountPath: /app/ingestion
+
+  # nfs creates a PersistentVolume and PersistentVolumeClaim backed by an NFS export.
+  # Leave server empty to skip PV/PVC creation and use existingClaimName instead.
+  nfs:
+    # server is the NFS server hostname or IP address.
+    server: ""
+    # path is the exported NFS path.
+    path: ""
+    # storageClass is the Kubernetes StorageClass name to set on the PV/PVC pair.
+    storageClass: "nfs"
+    # capacity is the storage capacity advertised on the PV.
+    capacity: "10Ti"
+    mountOptions:
+      - hard
+      - nfsvers=4
+
+  # existingClaimName uses a pre-existing PVC instead of creating one from nfs config above.
+  existingClaimName: ""
+
+  # usePolling enables polling-based file watching instead of inotify.
+  # Must be true for NFS, SMB, and other network filesystems (inotify doesn't fire over them).
+  usePolling: true
+
+  # pollingIntervalMs is the file-check interval in milliseconds when usePolling is true.
+  pollingIntervalMs: 30000
+
+  # postProcessingStrategy controls what Papra does with files after ingestion.
+  # One of: "delete", "move"
+  postProcessingStrategy: delete

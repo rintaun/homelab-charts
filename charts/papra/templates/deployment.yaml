@@ -1,0 +1,175 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "papra.fullname" . }}
+  labels:
+    {{- include "papra.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "papra.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "papra.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "papra.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "papra.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: APP_BASE_URL
+              value: {{ .Values.config.appBaseUrl | quote }}
+            - name: AUTH_IS_REGISTRATION_ENABLED
+              value: {{ .Values.config.auth.isRegistrationEnabled | quote }}
+            - name: AUTH_FIRST_USER_AS_ADMIN
+              value: {{ .Values.config.auth.firstUserAsAdmin | quote }}
+            - name: AUTH_IP_ADDRESS_HEADERS
+              value: {{ .Values.config.auth.ipAddressHeaders | quote }}
+            - name: DOCUMENT_STORAGE_DRIVER
+              value: {{ .Values.config.storage.driver | quote }}
+            {{- if eq .Values.config.storage.driver "s3" }}
+            - name: DOCUMENT_STORAGE_S3_BUCKET_NAME
+              value: {{ .Values.config.storage.s3.bucket | quote }}
+            - name: DOCUMENT_STORAGE_S3_REGION
+              value: {{ .Values.config.storage.s3.region | quote }}
+            - name: DOCUMENT_STORAGE_S3_ENDPOINT
+              value: {{ .Values.config.storage.s3.endpoint | quote }}
+            - name: DOCUMENT_STORAGE_S3_FORCE_PATH_STYLE
+              value: {{ .Values.config.storage.s3.forcePathStyle | quote }}
+            - name: DOCUMENT_STORAGE_S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "papra.s3SecretName" . }}
+                  key: access-key-id
+            - name: DOCUMENT_STORAGE_S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "papra.s3SecretName" . }}
+                  key: secret-access-key
+            {{- end }}
+            - name: AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "papra.secretName" . }}
+                  key: auth-secret
+            {{- if .Values.config.auth.customOAuthProviders }}
+            {{- range .Values.config.auth.customOAuthProviders }}
+            - name: OIDC_{{ .id | upper | replace "-" "_" }}_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "papra.oidcSecretName" $ }}
+                  key: {{ .id }}-client-secret
+            {{- end }}
+            - name: AUTH_PROVIDERS_CUSTOMS
+              value: {{ include "papra.customOAuthProvidersJson" . | quote }}
+            {{- end }}
+            {{- if .Values.webhookBridge.enabled }}
+            - name: INTAKE_EMAILS_IS_ENABLED
+              value: "true"
+            - name: INTAKE_EMAILS_DRIVER
+              value: {{ .Values.webhookBridge.intakeEmails.driver | quote }}
+            {{- if eq .Values.webhookBridge.intakeEmails.driver "catch-all" }}
+            - name: INTAKE_EMAILS_CATCH_ALL_DOMAIN
+              value: {{ required "webhookBridge.intakeEmails.catchAllDomain is required when driver is catch-all" .Values.webhookBridge.intakeEmails.catchAllDomain | quote }}
+            {{- end }}
+            - name: INTAKE_EMAILS_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "papra.webhookBridgeSecretName" . }}
+                  key: webhook-secret
+            {{- end }}
+            {{- if .Values.ingestionFolder.enabled }}
+            - name: INGESTION_FOLDER_IS_ENABLED
+              value: "true"
+            - name: INGESTION_FOLDER_ROOT_PATH
+              value: {{ .Values.ingestionFolder.mountPath | quote }}
+            - name: INGESTION_FOLDER_WATCHER_USE_POLLING
+              value: {{ .Values.ingestionFolder.usePolling | quote }}
+            {{- if .Values.ingestionFolder.usePolling }}
+            - name: INGESTION_FOLDER_WATCHER_POLLING_INTERVAL_MS
+              value: {{ .Values.ingestionFolder.pollingIntervalMs | quote }}
+            {{- end }}
+            - name: INGESTION_FOLDER_POST_PROCESSING_STRATEGY
+              value: {{ .Values.ingestionFolder.postProcessingStrategy | quote }}
+            {{- end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: app-data
+              mountPath: /app/app-data
+            {{- if .Values.ingestionFolder.enabled }}
+            - name: ingestion
+              mountPath: {{ .Values.ingestionFolder.mountPath }}
+            {{- end }}
+        {{- if .Values.webhookBridge.enabled }}
+        - name: webhook-bridge
+          image: "{{ .Values.webhookBridge.image.repository }}:{{ .Values.webhookBridge.image.tag }}"
+          imagePullPolicy: {{ .Values.webhookBridge.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - name: webhook
+              containerPort: {{ .Values.webhookBridge.port }}
+              protocol: TCP
+          env:
+            - name: PORT
+              value: {{ .Values.webhookBridge.port | quote }}
+            - name: PAPRA_WEBHOOK_URL
+              value: {{ .Values.webhookBridge.papraWebhookUrl | default (printf "http://localhost:%s/api/intake-emails/ingest" (.Values.service.port | toString)) | quote }}
+            - name: PAPRA_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "papra.webhookBridgeSecretName" . }}
+                  key: webhook-secret
+            - name: FORWARDEMAIL_WEBHOOK_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "papra.webhookBridgeSecretName" . }}
+                  key: forwardemail-webhook-key
+                  optional: true
+          resources:
+            {{- toYaml .Values.webhookBridge.resources | nindent 12 }}
+        {{- end }}
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: {{ include "papra.fullname" . }}-data
+        {{- if .Values.ingestionFolder.enabled }}
+        - name: ingestion
+          persistentVolumeClaim:
+            claimName: {{ include "papra.ingestionFolderClaimName" . }}
+        {{- end }}

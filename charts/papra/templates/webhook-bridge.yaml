@@ -1,0 +1,59 @@
+{{- if .Values.webhookBridge.enabled }}
+{{- if eq .Values.webhookBridge.secret.mode "external" }}
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: {{ include "papra.webhookBridgeSecretName" . }}
+  labels:
+    {{- include "papra.labels" . | nindent 4 }}
+    app.kubernetes.io/component: webhook-bridge
+spec:
+  refreshInterval: {{ .Values.webhookBridge.externalSecret.refreshInterval }}
+  secretStoreRef:
+    name: {{ .Values.webhookBridge.externalSecret.secretStoreName }}
+    kind: {{ .Values.webhookBridge.externalSecret.secretStoreKind }}
+  target:
+    name: {{ include "papra.webhookBridgeSecretName" . }}
+    creationPolicy: Owner
+  data:
+    - secretKey: forwardemail-webhook-key
+      remoteRef:
+        key: {{ .Values.webhookBridge.externalSecret.remoteRef.key }}
+        property: {{ .Values.webhookBridge.externalSecret.remoteRef.forwardEmailWebhookKeyProperty }}
+    - secretKey: webhook-secret
+      remoteRef:
+        key: {{ .Values.webhookBridge.externalSecret.remoteRef.key }}
+        property: {{ .Values.webhookBridge.externalSecret.remoteRef.webhookSecretProperty }}
+{{- else if eq .Values.webhookBridge.secret.mode "create" }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "papra.webhookBridgeSecretName" . }}
+  labels:
+    {{- include "papra.labels" . | nindent 4 }}
+    app.kubernetes.io/component: webhook-bridge
+type: Opaque
+stringData:
+  forwardemail-webhook-key: {{ .Values.webhookBridge.secret.forwardEmailWebhookKey | quote }}
+  webhook-secret: {{ required "webhookBridge.secret.webhookSecret is required when webhookBridge.secret.mode is \"create\"" .Values.webhookBridge.secret.webhookSecret | quote }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "papra.fullname" . }}-webhook-bridge
+  labels:
+    {{- include "papra.labels" . | nindent 4 }}
+    app.kubernetes.io/component: webhook-bridge
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.webhookBridge.port }}
+      targetPort: webhook
+      protocol: TCP
+      name: webhook
+  selector:
+    {{- include "papra.selectorLabels" . | nindent 4 }}
+{{- end }}

@@ -1,0 +1,37 @@
+{{- if and .Values.ingestionFolder.enabled .Values.ingestionFolder.nfs.server }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "papra.fullname" . }}-ingestion-pv
+  labels:
+    {{- include "papra.labels" . | nindent 4 }}
+spec:
+  capacity:
+    storage: {{ .Values.ingestionFolder.nfs.capacity }}
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: {{ .Values.ingestionFolder.nfs.storageClass }}
+  mountOptions:
+    {{- toYaml .Values.ingestionFolder.nfs.mountOptions | nindent 4 }}
+  nfs:
+    server: {{ .Values.ingestionFolder.nfs.server }}
+    path: {{ .Values.ingestionFolder.nfs.path }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "papra.ingestionFolderClaimName" . }}
+  labels:
+    {{- include "papra.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ .Values.ingestionFolder.nfs.storageClass }}
+  volumeName: {{ include "papra.fullname" . }}-ingestion-pv
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.ingestionFolder.nfs.capacity }}
+{{- end }}
