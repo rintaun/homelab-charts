@@ -1,0 +1,44 @@
+suite: beets cronjob tests
+templates:
+  - cronjob.yaml
+tests:
+  - it: should render a CronJob
+    asserts:
+      - isKind:
+          of: CronJob
+
+  - it: should set the schedule
+    set:
+      config: ""
+      schedule: "0 3 * * *"
+    asserts:
+      - equal:
+          path: spec.schedule
+          value: "0 3 * * *"
+
+  - it: should mount the config volume
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].volumeMounts
+          content:
+            name: config
+            mountPath: /config
+          any: true
+
+  - it: should mount the music volume
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].volumeMounts
+          content:
+            name: music
+            mountPath: /music
+          any: true
+
+  - it: should set the image correctly
+    set:
+      image.repository: ghcr.io/rintaun/beets
+      image.tag: "2.10.0"
+    asserts:
+      - matchRegex:
+          path: spec.jobTemplate.spec.template.spec.containers[0].image
+          pattern: "ghcr.io/rintaun/beets:2.10.0"

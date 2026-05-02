@@ -1,0 +1,34 @@
+suite: navidrome ingress tests
+templates:
+  - ingress.yaml
+tests:
+  - it: should not render Ingress by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render Ingress when enabled
+    set:
+      ingress.enabled: true
+      ingress.host: navidrome.example.com
+    asserts:
+      - isKind:
+          of: Ingress
+
+  - it: should set the host correctly
+    set:
+      ingress.enabled: true
+      ingress.host: navidrome.example.com
+    asserts:
+      - equal:
+          path: spec.rules[0].host
+          value: navidrome.example.com
+
+  - it: should set TLS host correctly
+    set:
+      ingress.enabled: true
+      ingress.host: navidrome.example.com
+    asserts:
+      - equal:
+          path: spec.tls[0].hosts[0]
+          value: navidrome.example.com

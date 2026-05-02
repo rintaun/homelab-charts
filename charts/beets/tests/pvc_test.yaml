@@ -1,0 +1,34 @@
+suite: beets persistence tests
+templates:
+  - pvc.yaml
+tests:
+  - it: should render a data PVC by default
+    asserts:
+      - containsDocument:
+          kind: PersistentVolumeClaim
+          apiVersion: v1
+
+  - it: should not render a PV when nfs.server is not set
+    asserts:
+      - notContainsDocument:
+          kind: PersistentVolume
+          apiVersion: v1
+
+  - it: should render a PV and PVC when media nfs server is set
+    set:
+      persistence.media.volume.nfs.server: nfs.example.com
+      persistence.media.volume.nfs.path: /mnt/media
+    asserts:
+      - containsDocument:
+          kind: PersistentVolume
+          apiVersion: v1
+
+  - it: should set NFS server on the PV when specified
+    set:
+      persistence.media.volume.nfs.server: nfs.example.com
+      persistence.media.volume.nfs.path: /mnt/media
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.nfs.server
+          value: nfs.example.com

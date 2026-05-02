@@ -1,0 +1,23 @@
+suite: beets configmap tests
+templates:
+  - configmap.yaml
+tests:
+  - it: should render a ConfigMap
+    asserts:
+      - isKind:
+          of: ConfigMap
+
+  - it: should include config data key
+    asserts:
+      - isNotNull:
+          path: data.config\.yaml
+
+  - it: should render provided config content
+    set:
+      config: |
+        library: /music/beets.db
+        directory: /music
+    asserts:
+      - matchRegex:
+          path: data.config\.yaml
+          pattern: "library: /music/beets.db"

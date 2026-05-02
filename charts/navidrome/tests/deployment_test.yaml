@@ -1,0 +1,50 @@
+suite: navidrome deployment tests
+templates:
+  - deployment.yaml
+tests:
+  - it: should render a Deployment
+    asserts:
+      - isKind:
+          of: Deployment
+
+  - it: should use Recreate strategy
+    asserts:
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+
+  - it: should set the image correctly
+    set:
+      image.repository: deluan/navidrome
+      image.tag: "0.55.2"
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "deluan/navidrome:0.55.2"
+
+  - it: should mount the music volume
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: music
+            mountPath: /music
+          any: true
+
+  - it: should mount the data volume
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: data
+            mountPath: /data
+          any: true
+
+  - it: should set ND_MUSICFOLDER env var
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ND_MUSICFOLDER
+            value: /music
+          any: true

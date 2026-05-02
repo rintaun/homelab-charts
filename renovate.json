@@ -1,0 +1,55 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "labels": ["renovate"],
+  "customManagers": [
+    {
+      "description": "Update beets PyPI version in the Docker build arg",
+      "customType": "regex",
+      "fileMatch": ["^docker/beets/Dockerfile$"],
+      "matchStrings": ["ARG APP_VERSION=(?<currentValue>[\\d.]+)"],
+      "datasourceTemplate": "pypi",
+      "packageNameTemplate": "beets",
+      "depNameTemplate": "beets"
+    },
+    {
+      "description": "Update appVersion in actual-budget Chart.yaml from upstream image",
+      "customType": "regex",
+      "fileMatch": ["^charts/actual-budget/Chart\\.yaml$"],
+      "matchStrings": ["appVersion: \"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "docker",
+      "packageNameTemplate": "ghcr.io/actualbudget/actual-server",
+      "depNameTemplate": "ghcr.io/actualbudget/actual-server"
+    },
+    {
+      "description": "Update appVersion in navidrome Chart.yaml from upstream image",
+      "customType": "regex",
+      "fileMatch": ["^charts/navidrome/Chart\\.yaml$"],
+      "matchStrings": ["appVersion: \"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "docker",
+      "packageNameTemplate": "ghcr.io/navidrome/navidrome",
+      "depNameTemplate": "ghcr.io/navidrome/navidrome"
+    },
+    {
+      "description": "Update appVersion in beets Chart.yaml from published image tag",
+      "customType": "regex",
+      "fileMatch": ["^charts/beets/Chart\\.yaml$"],
+      "matchStrings": ["appVersion: \"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "docker",
+      "packageNameTemplate": "ghcr.io/rintaun/beets",
+      "depNameTemplate": "ghcr.io/rintaun/beets"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "papra image uses a -rootless tag suffix; extract semver from it",
+      "matchPackageNames": ["ghcr.io/papra-hq/papra"],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-rootless$"
+    },
+    {
+      "description": "Group beets Dockerfile and chart appVersion updates into one PR",
+      "matchPackageNames": ["beets", "ghcr.io/rintaun/beets"],
+      "groupName": "beets"
+    }
+  ]
+}

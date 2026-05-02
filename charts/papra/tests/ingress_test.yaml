@@ -1,0 +1,37 @@
+suite: papra ingress tests
+templates:
+  - ingress.yaml
+tests:
+  - it: should render Ingress by default (enabled: true)
+    set:
+      ingress.enabled: true
+      ingress.host: papra.example.com
+    asserts:
+      - isKind:
+          of: Ingress
+
+  - it: should not render Ingress when disabled
+    set:
+      ingress.enabled: false
+      ingress.host: papra.example.com
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should set the host correctly
+    set:
+      ingress.enabled: true
+      ingress.host: papra.example.com
+    asserts:
+      - equal:
+          path: spec.rules[0].host
+          value: papra.example.com
+
+  - it: should set TLS host correctly
+    set:
+      ingress.enabled: true
+      ingress.host: papra.example.com
+    asserts:
+      - equal:
+          path: spec.tls[0].hosts[0]
+          value: papra.example.com

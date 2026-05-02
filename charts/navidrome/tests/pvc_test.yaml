@@ -1,0 +1,46 @@
+suite: navidrome persistence tests
+templates:
+  - pvc.yaml
+tests:
+  - it: should render a data PVC by default
+    asserts:
+      - containsDocument:
+          kind: PersistentVolumeClaim
+          apiVersion: v1
+
+  - it: should render a music PVC by default
+    asserts:
+      - hasDocuments:
+          count: 2
+
+  - it: should not render a PV when nfs.server is not set
+    asserts:
+      - notContainsDocument:
+          kind: PersistentVolume
+          apiVersion: v1
+
+  - it: should render a PV when music nfs server is set
+    set:
+      persistence.music.volume.nfs.server: nfs.example.com
+      persistence.music.volume.nfs.path: /mnt/music
+    asserts:
+      - containsDocument:
+          kind: PersistentVolume
+          apiVersion: v1
+
+  - it: should set NFS server on the PV
+    set:
+      persistence.music.volume.nfs.server: nfs.example.com
+      persistence.music.volume.nfs.path: /mnt/music
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.nfs.server
+          value: nfs.example.com
+
+  - it: should not render music PVC when existingClaimName is set
+    set:
+      persistence.music.existingClaimName: my-music-pvc
+    asserts:
+      - hasDocuments:
+          count: 1

@@ -1,0 +1,73 @@
+suite: actual-budget deployment tests
+templates:
+  - deployment.yaml
+tests:
+  - it: should render a Deployment
+    asserts:
+      - isKind:
+          of: Deployment
+
+  - it: should set the image correctly
+    set:
+      image.repository: actualbudget/actual-server
+      image.tag: "25.4.0"
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "actualbudget/actual-server:25.4.0"
+
+  - it: should use Recreate strategy
+    asserts:
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+
+  - it: should set DATA_DIR env var
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ACTUAL_DATA_DIR
+
+  - it: should not set login-method env vars when using default mode
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ACTUAL_LOGIN_METHOD
+          any: true
+
+  - it: should set ACTUAL_LOGIN_METHOD when loginMethod is openid
+    set:
+      config.loginMethod: openid
+      config.openid.discoveryUrl: https://auth.example.com
+      config.openid.clientId: my-client
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ACTUAL_LOGIN_METHOD
+            value: openid
+
+  - it: should set ACTUAL_OPENID_DISCOVERY_URL when loginMethod is openid
+    set:
+      config.loginMethod: openid
+      config.openid.discoveryUrl: https://auth.example.com
+      config.openid.clientId: my-client
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ACTUAL_OPENID_DISCOVERY_URL
+            value: https://auth.example.com
+
+  - it: should reference secret for password
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ACTUAL_SERVER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: server-password
+          any: true
