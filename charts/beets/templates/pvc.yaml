@@ -1,0 +1,66 @@
+---
+# PVC for beets' library database, import log, and artwork cache.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "beets.fullname" . }}-data
+  labels:
+    {{- include "beets.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.persistence.data.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.persistence.data.size }}
+{{- if not .Values.persistence.media.existingClaimName }}
+{{- if .Values.persistence.media.volume.nfs.server }}
+---
+# PersistentVolume for the NFS-backed media share.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "beets.fullname" . }}-media-pv
+  labels:
+    {{- include "beets.labels" . | nindent 4 }}
+spec:
+  capacity:
+    storage: {{ .Values.persistence.media.claim.size }}
+  volumeMode: Filesystem
+  accessModes:
+    {{- toYaml .Values.persistence.media.claim.accessModes | nindent 4 }}
+  persistentVolumeReclaimPolicy: Retain
+  {{- with .Values.persistence.media.claim.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+  mountOptions:
+    {{- toYaml .Values.persistence.media.volume.nfs.mountOptions | nindent 4 }}
+  nfs:
+    server: {{ .Values.persistence.media.volume.nfs.server }}
+    path: {{ .Values.persistence.media.volume.nfs.path }}
+{{- end }}
+---
+# PVC for the media volume.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "beets.mediaClaimName" . }}
+  labels:
+    {{- include "beets.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.persistence.media.claim.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+  {{- if .Values.persistence.media.volume.nfs.server }}
+  volumeName: {{ include "beets.fullname" . }}-media-pv
+  {{- else if .Values.persistence.media.claim.volumeName }}
+  volumeName: {{ .Values.persistence.media.claim.volumeName }}
+  {{- end }}
+  accessModes:
+    {{- toYaml .Values.persistence.media.claim.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.media.claim.size }}
+{{- end }}

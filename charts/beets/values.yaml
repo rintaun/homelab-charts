@@ -1,0 +1,150 @@
+# nameOverride replaces the chart name in resource names when set.
+nameOverride: ""
+# fullnameOverride replaces the fully-qualified release name when set.
+fullnameOverride: ""
+
+image:
+  # repository is the container image repository.
+  # This chart expects the image built from docker/beets/Dockerfile in this repository.
+  repository: ghcr.io/rintaun/beets
+  # tag overrides the chart appVersion when set.
+  tag: ""
+  # digest pins to an immutable image reference. Prepend sha256: or omit the prefix.
+  digest: ""
+  # pullPolicy is the image pull policy.
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  # create specifies whether a ServiceAccount should be created.
+  create: true
+  # annotations to add to the ServiceAccount.
+  annotations: {}
+  # name overrides the generated name when set.
+  name: ""
+
+# podAnnotations are extra annotations added to the pod.
+podAnnotations: {}
+
+# podSecurityContext sets the security context for the pod.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# securityContext sets the security context for the beets container.
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+# env contains extra environment variables injected into the container (e.g. TZ).
+env:
+  TZ: "UTC"
+  # BEETSDIR tells beets where to look for config.yaml (the ConfigMap mount).
+  BEETSDIR: "/config"
+  # XDG_CACHE_HOME redirects beets' cache (artwork, etc.) to the data PVC
+  # so it persists across runs and the root filesystem stays read-only.
+  XDG_CACHE_HOME: "/data/cache"
+
+# schedule is the CronJob schedule expression.
+schedule: "@hourly"
+
+# successfulJobsHistoryLimit is how many completed job pods to retain.
+successfulJobsHistoryLimit: 3
+
+# failedJobsHistoryLimit is how many failed job pods to retain.
+failedJobsHistoryLimit: 3
+
+# importDir is the path beets scans for new music files to import.
+# This path must exist within the media volume mount (/media).
+importDir: /media/import
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+# beetsConfig is the full beets config.yaml rendered verbatim into a ConfigMap.
+#
+# Paths must be consistent with the volume mounts defined below:
+#   /config  – read-only ConfigMap (BEETSDIR)
+#   /data    – writable PVC for library.db, import log, and artwork cache
+#   /media   – writable volume for the music library and import staging directory
+#   /tmp     – emptyDir for temporary files (required when readOnlyRootFilesystem=true)
+#
+# Plugin notes:
+#   chroma    – requires fpcalc (included in the image) and a free AcoustID API key
+#               (https://acoustid.org/login). Set ACOUSTID_APIKEY env var or add:
+#                 chroma:
+#                   auto: yes
+#   lastgenre – set lastfm_key if you want Last.fm genre lookups
+#
+beetsConfig:
+  library: /data/library.db
+  directory: /media/music
+  log: /data/import.log
+  import:
+    move: true
+    quiet: true
+    timid: false
+  plugins:
+    - fetchart
+    - embedart
+    - lastgenre
+  paths:
+    default: $albumartist/$year - $album/$track $title
+    singleton: Non-Album/$artist/$title
+    comp: Compilations/$year - $album/$disc-$track $title
+  fetchart:
+    auto: true
+  embedart:
+    auto: true
+  lastgenre:
+    auto: true
+
+persistence:
+  # data is the PVC for beets' library database, import log, and artwork cache.
+  data:
+    # storageClass is the Kubernetes StorageClass to use. Empty string uses the cluster default.
+    storageClass: ""
+    # size is the storage capacity requested.
+    size: 1Gi
+
+  # media configures the volume for the full media share (music library + import staging).
+  # beets reads from importDir and writes organised files to beetsConfig.directory.
+  media:
+    # existingClaimName uses a pre-existing PVC instead of creating one.
+    # When set, claim and volume below are ignored entirely.
+    existingClaimName: ""
+
+    # claim configures the PVC created by this chart.
+    # Ignored when existingClaimName is set.
+    claim:
+      # storageClassName is the StorageClass to use. Empty string uses the cluster default.
+      storageClassName: ""
+      # accessModes are the PVC access modes.
+      accessModes:
+        - ReadWriteMany
+      # size is the requested storage capacity.
+      size: 1Ti
+      # volumeName explicitly binds the PVC to a specific PV.
+      # Automatically set when volume.nfs.server is configured. Leave empty for dynamic provisioning.
+      volumeName: ""
+
+    # volume creates a static PersistentVolume bound to the chart's media PVC.
+    # Set volume.nfs.server to enable PV creation; leave empty to skip.
+    volume:
+      nfs:
+        # server is the NFS server hostname or IP. Leave empty to skip PV creation.
+        server: ""
+        # path is the exported NFS path.
+        path: ""
+        mountOptions:
+          - hard
+          - nfsvers=4

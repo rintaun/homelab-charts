@@ -1,0 +1,18 @@
+apiVersion: v2
+name: beets
+type: application
+version: 0.1.0
+appVersion: "2.10.0"
+description: >
+  Helm chart for beets — the music geek's media organizer.
+  Runs as a Kubernetes CronJob to periodically import and tag new music files.
+home: https://beets.io
+sources:
+  - https://github.com/beetbox/beets
+  - https://github.com/rintaun/homelab-charts/tree/main/docker/beets
+keywords:
+  - music
+  - media
+  - tagging
+  - cronjob
+dependencies: []

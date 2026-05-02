@@ -1,0 +1,71 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "beets.fullname" . }}
+  labels:
+    {{- include "beets.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.schedule | quote }}
+  # Forbid concurrent runs — an in-progress import must finish before the next
+  # scheduled run starts to avoid two jobs writing to the library simultaneously.
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: {{ .Values.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          {{- with .Values.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          labels:
+            {{- include "beets.selectorLabels" . | nindent 12 }}
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: {{ include "beets.serviceAccountName" . }}
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          containers:
+            - name: {{ .Chart.Name }}
+              image: {{ include "beets.image" . | quote }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              # Import all files in the staging directory. beets skips files already
+              # in the library (tracked by library.db), so re-running is safe.
+              args: ["import", {{ .Values.importDir | quote }}]
+              env:
+                {{- range $key, $value := .Values.env }}
+                - name: {{ $key }}
+                  value: {{ $value | quote }}
+                {{- end }}
+              securityContext:
+                {{- toYaml .Values.securityContext | nindent 16 }}
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+              volumeMounts:
+                # /config — read-only ConfigMap; BEETSDIR=/config tells beets to look here.
+                - name: config
+                  mountPath: /config
+                  readOnly: true
+                # /data — writable PVC for library.db, import log, and artwork cache.
+                - name: data
+                  mountPath: /data
+                # /media — media volume; beets reads from importDir and writes to beetsConfig.directory.
+                - name: media
+                  mountPath: /media
+                # /tmp — emptyDir so beets can write temporary files with readOnlyRootFilesystem.
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: config
+              configMap:
+                name: {{ include "beets.fullname" . }}-config
+            - name: data
+              persistentVolumeClaim:
+                claimName: {{ include "beets.fullname" . }}-data
+            - name: media
+              persistentVolumeClaim:
+                claimName: {{ include "beets.mediaClaimName" . }}
+            - name: tmp
+              emptyDir: {}
