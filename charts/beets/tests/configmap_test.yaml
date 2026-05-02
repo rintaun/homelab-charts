@@ -7,14 +7,15 @@ tests:
       - isKind:
           of: ConfigMap
 
-  - it: should include config data key
+  - it: should include config.yaml data key
     asserts:
-      - isNotNullOrEmpty:
-          path: data
+      - isNotNull:
+          path: data["config.yaml"]
 
   - it: should render provided config content
     set:
       config: "library: /music/beets.db"
     asserts:
-      - isNotNullOrEmpty:
-          path: data
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: "library"
