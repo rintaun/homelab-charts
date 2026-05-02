@@ -72,5 +72,6 @@ tests:
             name: ACTUAL_SERVER_PASSWORD
             valueFrom:
               secretKeyRef:
+                name: RELEASE-NAME-actual-budget
                 key: server-password
-          any: true
+                optional: true
