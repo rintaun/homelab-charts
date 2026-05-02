@@ -6,8 +6,10 @@ ARG APP_VERSION
 
 # libchromaprint-tools provides fpcalc, required by the beets chroma plugin
 # for acoustic fingerprinting via the AcoustID service.
+# ffmpeg provides ffprobe, required by beets to detect and fix file extensions.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+        ffmpeg \
         libchromaprint-tools \
     && rm -rf /var/lib/apt/lists/*
 
