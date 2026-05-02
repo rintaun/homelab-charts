@@ -67,6 +67,17 @@ importDir: /media/import
 # Examples: ["-v"] for verbose output, ["--nowrite"] to skip tag writing.
 importArgs: []
 
+# extraEnv is a list of additional environment variables for the beets container.
+# Useful for injecting secrets (e.g. API keys) via secretKeyRef.
+# Example:
+#   extraEnv:
+#     - name: ACOUSTID_APIKEY
+#       valueFrom:
+#         secretKeyRef:
+#           name: beets-secrets
+#           key: acoustid-api-key
+extraEnv: []
+
 resources:
   requests:
     cpu: 100m
