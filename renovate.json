@@ -6,7 +6,9 @@
     {
       "description": "Update beets PyPI version in the Docker build arg",
       "customType": "regex",
-      "fileMatch": ["^docker/beets/Dockerfile$"],
+      "managerFilePatterns": [
+        "/^docker/beets/Dockerfile$/"
+      ],
       "matchStrings": ["ARG APP_VERSION=(?<currentValue>[\\d.]+)"],
       "datasourceTemplate": "pypi",
       "packageNameTemplate": "beets",
@@ -15,7 +17,9 @@
     {
       "description": "Update appVersion in actual-budget Chart.yaml from upstream image",
       "customType": "regex",
-      "fileMatch": ["^charts/actual-budget/Chart\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/actual-budget/Chart\\.yaml$/"
+      ],
       "matchStrings": ["appVersion: \"(?<currentValue>[^\"]+)\""],
       "datasourceTemplate": "docker",
       "packageNameTemplate": "ghcr.io/actualbudget/actual-server",
@@ -24,7 +28,9 @@
     {
       "description": "Update appVersion in navidrome Chart.yaml from upstream image",
       "customType": "regex",
-      "fileMatch": ["^charts/navidrome/Chart\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/navidrome/Chart\\.yaml$/"
+      ],
       "matchStrings": ["appVersion: \"(?<currentValue>[^\"]+)\""],
       "datasourceTemplate": "docker",
       "packageNameTemplate": "ghcr.io/navidrome/navidrome",
@@ -33,7 +39,9 @@
     {
       "description": "Update appVersion in beets Chart.yaml from published image tag",
       "customType": "regex",
-      "fileMatch": ["^charts/beets/Chart\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/beets/Chart\\.yaml$/"
+      ],
       "matchStrings": ["appVersion: \"(?<currentValue>[^\"]+)\""],
       "datasourceTemplate": "docker",
       "packageNameTemplate": "ghcr.io/rintaun/beets",
