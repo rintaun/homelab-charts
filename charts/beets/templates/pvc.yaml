@@ -32,7 +32,7 @@ spec:
   accessModes:
     {{- toYaml .Values.persistence.media.claim.accessModes | nindent 4 }}
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: {{ .Values.persistence.media.claim.storageClassName | default "" }}
+  storageClassName: {{ .Values.persistence.media.claim.storageClassName | default "" | quote }}
   mountOptions:
     {{- toYaml .Values.persistence.media.volume.nfs.mountOptions | nindent 4 }}
   nfs:
@@ -48,7 +48,7 @@ metadata:
   labels:
     {{- include "beets.labels" . | nindent 4 }}
 spec:
-  storageClassName: {{ .Values.persistence.media.claim.storageClassName | default "" }}
+  storageClassName: {{ .Values.persistence.media.claim.storageClassName | default "" | quote }}
   {{- if .Values.persistence.media.volume.nfs.server }}
   volumeName: {{ include "beets.fullname" . }}-media-pv
   {{- else if .Values.persistence.media.claim.volumeName }}
