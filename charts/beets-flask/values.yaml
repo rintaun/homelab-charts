@@ -67,9 +67,9 @@ extraEnv: []
 resources:
   requests:
     cpu: 100m
-    memory: 256Mi
-  limits:
     memory: 512Mi
+  limits:
+    memory: 2Gi
 
 # beetsConfig is the full beets config.yaml rendered into a ConfigMap.
 # The init container copies this into /config/beets/config.yaml at startup.
