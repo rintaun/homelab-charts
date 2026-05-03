@@ -1,0 +1,24 @@
+---
+# ConfigMap for the beets config.yaml.
+# The init container copies this into /config/beets/config.yaml at pod startup.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "beets-flask.fullname" . }}-beets-config
+  labels:
+    {{- include "beets-flask.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+{{ toYaml .Values.beetsConfig | indent 4 }}
+---
+# ConfigMap for the beets-flask config.yaml.
+# The init container copies this into /config/beets-flask/config.yaml at pod startup.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "beets-flask.fullname" . }}-beets-flask-config
+  labels:
+    {{- include "beets-flask.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+{{ toYaml .Values.beetsFlaskConfig | indent 4 }}

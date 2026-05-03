@@ -1,0 +1,62 @@
+---
+# PVC for the /config directory (beets + beets-flask config files and SQLite databases).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "beets-flask.fullname" . }}-config
+  labels:
+    {{- include "beets-flask.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.persistence.config.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.persistence.config.size }}
+{{- if not .Values.persistence.media.existingClaimName }}
+{{- if .Values.persistence.media.volume.nfs.server }}
+---
+# PersistentVolume for the NFS-backed media share.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "beets-flask.fullname" . }}-media-pv
+  labels:
+    {{- include "beets-flask.labels" . | nindent 4 }}
+spec:
+  capacity:
+    storage: {{ .Values.persistence.media.claim.size }}
+  volumeMode: Filesystem
+  accessModes:
+    {{- toYaml .Values.persistence.media.claim.accessModes | nindent 4 }}
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: {{ .Values.persistence.media.claim.storageClassName | default "" | quote }}
+  mountOptions:
+    {{- toYaml .Values.persistence.media.volume.nfs.mountOptions | nindent 4 }}
+  nfs:
+    server: {{ .Values.persistence.media.volume.nfs.server }}
+    path: {{ .Values.persistence.media.volume.nfs.path }}
+{{- end }}
+---
+# PVC for the media volume.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "beets-flask.mediaClaimName" . }}
+  labels:
+    {{- include "beets-flask.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ .Values.persistence.media.claim.storageClassName | default "" | quote }}
+  {{- if .Values.persistence.media.volume.nfs.server }}
+  volumeName: {{ include "beets-flask.fullname" . }}-media-pv
+  {{- else if .Values.persistence.media.claim.volumeName }}
+  volumeName: {{ .Values.persistence.media.claim.volumeName }}
+  {{- end }}
+  accessModes:
+    {{- toYaml .Values.persistence.media.claim.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.media.claim.size }}
+{{- end }}

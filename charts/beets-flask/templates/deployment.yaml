@@ -1,0 +1,90 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "beets-flask.fullname" . }}
+  labels:
+    {{- include "beets-flask.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  # Recreate ensures only one pod mounts the config PVC at a time (SQLite databases).
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "beets-flask.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "beets-flask.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "beets-flask.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        # config-init copies ConfigMap files into the writable config PVC so the main
+        # container can read and update them (beets and beets-flask write SQLite databases
+        # alongside the config files in the same directories).
+        - name: config-init
+          image: busybox
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              mkdir -p /config/beets /config/beets-flask
+              cp /config-beets-cm/config.yaml /config/beets/config.yaml
+              cp /config-beets-flask-cm/config.yaml /config/beets-flask/config.yaml
+          volumeMounts:
+            - name: config-data
+              mountPath: /config
+            - name: config-beets-cm
+              mountPath: /config-beets-cm
+              readOnly: true
+            - name: config-beets-flask-cm
+              mountPath: /config-beets-flask-cm
+              readOnly: true
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "beets-flask.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 5001
+              protocol: TCP
+          env:
+            - name: TZ
+              value: {{ .Values.timezone | quote }}
+            - name: USER_ID
+              value: {{ .Values.userId | quote }}
+            - name: GROUP_ID
+              value: {{ .Values.groupId | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            # /config — writable PVC; beets and beets-flask SQLite databases live here.
+            - name: config-data
+              mountPath: /config
+            # /media — media volume; music library source and destination.
+            - name: media
+              mountPath: /media
+      volumes:
+        - name: config-data
+          persistentVolumeClaim:
+            claimName: {{ include "beets-flask.fullname" . }}-config
+        - name: config-beets-cm
+          configMap:
+            name: {{ include "beets-flask.fullname" . }}-beets-config
+        - name: config-beets-flask-cm
+          configMap:
+            name: {{ include "beets-flask.fullname" . }}-beets-flask-config
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ include "beets-flask.mediaClaimName" . }}
