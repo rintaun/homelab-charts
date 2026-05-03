@@ -37,6 +37,7 @@ spec:
               mkdir -p /config/beets /config/beets-flask
               cp /config-beets-cm/config.yaml /config/beets/config.yaml
               cp /config-beets-flask-cm/config.yaml /config/beets-flask/config.yaml
+              chown -R {{ .Values.userId }}:{{ .Values.groupId }} /config/beets /config/beets-flask
           volumeMounts:
             - name: config-data
               mountPath: /config
