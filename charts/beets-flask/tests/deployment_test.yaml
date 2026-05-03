@@ -1,0 +1,109 @@
+suite: beets-flask deployment tests
+templates:
+  - deployment.yaml
+tests:
+  - it: should render a Deployment
+    asserts:
+      - isKind:
+          of: Deployment
+
+  - it: should use Recreate strategy
+    asserts:
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+
+  - it: should set the image correctly
+    set:
+      image.repository: pspitzner/beets-flask
+      image.tag: "stable"
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "pspitzner/beets-flask:stable"
+
+  - it: should set TZ env var from timezone value
+    set:
+      timezone: "America/New_York"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TZ
+            value: "America/New_York"
+          any: true
+
+  - it: should set USER_ID env var from userId value
+    set:
+      userId: 1001
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: USER_ID
+            value: "1001"
+          any: true
+
+  - it: should set GROUP_ID env var from groupId value
+    set:
+      groupId: 1001
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: GROUP_ID
+            value: "1001"
+          any: true
+
+  - it: should include extraEnv in container env
+    set:
+      extraEnv:
+        - name: ACOUSTID_APIKEY
+          valueFrom:
+            secretKeyRef:
+              name: beets-flask-secrets
+              key: acoustid-api-key
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ACOUSTID_APIKEY
+            valueFrom:
+              secretKeyRef:
+                name: beets-flask-secrets
+                key: acoustid-api-key
+          any: true
+
+  - it: should mount config-data at /config
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: config-data
+            mountPath: /config
+          any: true
+
+  - it: should mount media at /media
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: media
+            mountPath: /media
+          any: true
+
+  - it: should include the config-init init container
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: config-init
+
+  - it: should set port 5001 on the container
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: http
+            containerPort: 5001
+            protocol: TCP
+          any: true

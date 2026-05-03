@@ -1,0 +1,20 @@
+apiVersion: v2
+name: beets-flask
+type: application
+version: 0.1.0
+appVersion: "stable"
+description: >
+  Helm chart for beets-flask — a web UI for the beets music organizer.
+  Provides a browser-based interface for importing, tagging, and browsing
+  your music library with beets.
+home: https://github.com/pSpitzner/beets-flask
+sources:
+  - https://github.com/pSpitzner/beets-flask
+  - https://github.com/rintaun/homelab-charts/tree/main/charts/beets-flask
+keywords:
+  - music
+  - media
+  - beets
+  - web-ui
+  - tagging
+dependencies: []

@@ -1,0 +1,34 @@
+suite: beets-flask service tests
+templates:
+  - service.yaml
+tests:
+  - it: should render a Service
+    asserts:
+      - isKind:
+          of: Service
+
+  - it: should expose port 5001
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            port: 5001
+            targetPort: http
+            protocol: TCP
+            name: http
+          any: true
+
+  - it: should use ClusterIP type
+    asserts:
+      - equal:
+          path: spec.type
+          value: ClusterIP
+
+  - it: should use correct selector labels
+    asserts:
+      - equal:
+          path: spec.selector["app.kubernetes.io/name"]
+          value: beets-flask
+      - equal:
+          path: spec.selector["app.kubernetes.io/instance"]
+          value: RELEASE-NAME

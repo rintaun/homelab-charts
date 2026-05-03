@@ -1,0 +1,177 @@
+# nameOverride replaces the chart name in resource names when set.
+nameOverride: ""
+# fullnameOverride replaces the fully-qualified release name when set.
+fullnameOverride: ""
+
+# replicaCount is the number of pod replicas to run.
+replicaCount: 1
+
+image:
+  # repository is the container image repository.
+  repository: pspitzner/beets-flask
+  # tag overrides the chart appVersion when set.
+  tag: ""
+  # digest pins to an immutable image reference. Prepend sha256: or omit the prefix.
+  digest: ""
+  # pullPolicy is the image pull policy.
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  # create specifies whether a ServiceAccount should be created.
+  create: true
+  # annotations to add to the ServiceAccount.
+  annotations: {}
+  # name overrides the generated name when set.
+  name: ""
+
+# podAnnotations are extra annotations added to the pod.
+podAnnotations: {}
+
+# podSecurityContext sets the security context for the pod.
+# Note: runAsNonRoot is NOT set because the container entrypoint runs as root
+# and switches to the USER_ID/GROUP_ID user internally (Linuxserver.io style init).
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+# securityContext sets the security context for the beets-flask container.
+# readOnlyRootFilesystem is false because the container writes to system paths during startup.
+# SETUID/SETGID/CHOWN capabilities are required for user switching via USER_ID/GROUP_ID.
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop: ["ALL"]
+    add: ["SETUID", "SETGID", "CHOWN"]
+
+# timezone sets the TZ environment variable for the container.
+timezone: "UTC"
+
+# userId sets the USER_ID environment variable, controlling which UID the app runs as.
+userId: 1000
+
+# groupId sets the GROUP_ID environment variable, controlling which GID the app runs as.
+groupId: 1000
+
+# extraEnv is a list of additional environment variables for the beets-flask container.
+# Useful for injecting secrets (e.g. API keys) via secretKeyRef.
+# Example:
+#   extraEnv:
+#     - name: ACOUSTID_APIKEY
+#       valueFrom:
+#         secretKeyRef:
+#           name: beets-flask-secrets
+#           key: acoustid-api-key
+extraEnv: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+# beetsConfig is the full beets config.yaml rendered into a ConfigMap.
+# The init container copies this into /config/beets/config.yaml at startup.
+#
+# Paths must be consistent with the volume mounts:
+#   /config/beets/library.db    – beets SQLite database (on config PVC)
+#   /media/music                – organized music library (on media volume)
+#
+# Plugin notes:
+#   chroma    – requires fpcalc and a free AcoustID API key (https://acoustid.org/login).
+#               Set ACOUSTID_APIKEY via extraEnv or add chroma: auto: yes
+#   lastgenre – set lastfm_key if you want Last.fm genre lookups
+beetsConfig:
+  library: /config/beets/library.db
+  directory: /media/music
+  import:
+    move: true
+    quiet: true
+    timid: false
+  plugins:
+    - fetchart
+    - embedart
+    - lastgenre
+    - chroma
+  paths:
+    default: $albumartist/$year - $album/$track $title
+    singleton: Non-Album/$artist/$title
+    comp: Compilations/$year - $album/$disc-$track $title
+  fetchart:
+    auto: true
+  embedart:
+    auto: true
+  lastgenre:
+    auto: true
+
+# beetsFlaskConfig is the beets-flask config.yaml rendered into a ConfigMap.
+# The init container copies this into /config/beets-flask/config.yaml at startup.
+#
+# Add inbox folder paths to gui.inbox.folders to have beets-flask monitor directories
+# for new music files to import.
+beetsFlaskConfig:
+  gui:
+    num_preview_workers: 4
+    library:
+      readonly: no
+      artist_separators: [",", ";", "&"]
+    terminal:
+      start_path: "/repo"
+    inbox:
+      ignore: "_use_beets_ignore"
+      debounce_before_autotag: 30
+      concat_nested_folders: yes
+      expand_files: no
+      folders: []
+
+ingress:
+  # host is the fully-qualified hostname for the ingress. Leave empty to disable ingress.
+  host: ""
+  # className is the IngressClass to use. Empty string uses the cluster default IngressClass.
+  className: ""
+  # annotations are added to the Ingress resource metadata.
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    external-dns.alpha.kubernetes.io/cloudflare: "true"
+
+persistence:
+  # config is the PVC for the /config directory (beets and beets-flask config + SQLite databases).
+  config:
+    # storageClass is the Kubernetes StorageClass to use. Empty string uses the cluster default.
+    storageClass: ""
+    # size is the storage capacity requested.
+    size: 1Gi
+
+  # media configures the volume for the full media share (music library + import staging).
+  media:
+    # existingClaimName uses a pre-existing PVC instead of creating one.
+    # When set, claim and volume below are ignored entirely.
+    existingClaimName: ""
+
+    # claim configures the PVC created by this chart.
+    # Ignored when existingClaimName is set.
+    claim:
+      # storageClassName is the StorageClass to use. Empty string uses the cluster default.
+      storageClassName: ""
+      # accessModes are the PVC access modes.
+      accessModes:
+        - ReadWriteMany
+      # size is the requested storage capacity.
+      size: 1Ti
+      # volumeName explicitly binds the PVC to a specific PV.
+      # Automatically set when volume.nfs.server is configured. Leave empty for dynamic provisioning.
+      volumeName: ""
+
+    # volume creates a static PersistentVolume bound to the chart's media PVC.
+    # Set volume.nfs.server to enable PV creation; leave empty to skip.
+    volume:
+      nfs:
+        # server is the NFS server hostname or IP. Leave empty to skip PV creation.
+        server: ""
+        # path is the exported NFS path.
+        path: ""
+        mountOptions:
+          - hard
+          - nfsvers=4
