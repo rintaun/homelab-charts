@@ -123,7 +123,15 @@ beetsFlaskConfig:
       debounce_before_autotag: 30
       concat_nested_folders: yes
       expand_files: no
-      folders: []
+      # folders is a named dict of inbox configurations. Each key is an arbitrary inbox
+      # name. autotag can be "auto", "preview", or false.
+      # Example:
+      #   folders:
+      #     Inbox:
+      #       name: "My Inbox"
+      #       path: "/media/music-import"
+      #       autotag: "preview"
+      folders: {}
 
 ingress:
   # host is the fully-qualified hostname for the ingress. Leave empty to disable ingress.
