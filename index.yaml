@@ -178,6 +178,29 @@ entries:
     urls:
     - https://github.com/rintaun/homelab-charts/releases/download/beets-0.1.0/beets-0.1.0.tgz
     version: 0.1.0
+  beets-flask:
+  - apiVersion: v2
+    appVersion: stable
+    created: "2026-05-03T01:18:00.493612959Z"
+    description: 'Helm chart for beets-flask — a web UI for the beets music organizer.
+      Provides a browser-based interface for importing, tagging, and browsing your
+      music library with beets. '
+    digest: 620776f64acd1d8bedfe4b44b354350832f822c8feee0d01ffad7066d4e41070
+    home: https://github.com/pSpitzner/beets-flask
+    keywords:
+    - music
+    - media
+    - beets
+    - web-ui
+    - tagging
+    name: beets-flask
+    sources:
+    - https://github.com/pSpitzner/beets-flask
+    - https://github.com/rintaun/homelab-charts/tree/main/charts/beets-flask
+    type: application
+    urls:
+    - https://github.com/rintaun/homelab-charts/releases/download/beets-flask-0.1.0/beets-flask-0.1.0.tgz
+    version: 0.1.0
   navidrome:
   - apiVersion: v2
     appVersion: 0.61.2
@@ -289,4 +312,4 @@ entries:
     urls:
     - https://github.com/rintaun/homelab-charts/releases/download/papra-0.1.0/papra-0.1.0.tgz
     version: 0.1.0
-generated: "2026-05-02T22:48:44.917309805Z"
+generated: "2026-05-03T01:18:00.493641392Z"
