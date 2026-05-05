@@ -56,7 +56,7 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              pip install --quiet --target /pip-extra {{ .Values.extraPipPackages | join " " | quote }}
+              pip install --quiet --prefer-binary --target /pip-extra {{ .Values.extraPipPackages | join " " | quote }}
           volumeMounts:
             - name: pip-extra
               mountPath: /pip-extra
