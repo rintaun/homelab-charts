@@ -64,6 +64,15 @@ groupId: 1000
 #           key: acoustid-api-key
 extraEnv: []
 
+# extraPipPackages is a list of additional pip packages to install at pod startup,
+# before the main container starts. Use this to upgrade beets or install plugins
+# that are not bundled in the container image.
+# Example:
+#   extraPipPackages:
+#     - "beets==2.10.0"
+#     - "beets-alternatives"
+extraPipPackages: []
+
 resources:
   requests:
     cpu: 100m
