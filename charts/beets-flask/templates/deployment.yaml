@@ -47,6 +47,25 @@ spec:
             - name: config-beets-flask-cm
               mountPath: /config-beets-flask-cm
               readOnly: true
+        {{- if .Values.extraPipPackages }}
+        # pip-upgrade installs extra/upgraded Python packages into a shared volume that
+        # is prepended to PYTHONPATH in the main container.
+        - name: pip-upgrade
+          image: {{ include "beets-flask.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              pip install --quiet --target /pip-extra {{ .Values.extraPipPackages | join " " | quote }}
+          volumeMounts:
+            - name: pip-extra
+              mountPath: /pip-extra
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+        {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: {{ include "beets-flask.image" . | quote }}
@@ -62,6 +81,10 @@ spec:
               value: {{ .Values.userId | quote }}
             - name: GROUP_ID
               value: {{ .Values.groupId | quote }}
+            {{- if .Values.extraPipPackages }}
+            - name: PYTHONPATH
+              value: "/pip-extra"
+            {{- end }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -76,6 +99,10 @@ spec:
             # /media — media volume; music library source and destination.
             - name: media
               mountPath: /media
+            {{- if .Values.extraPipPackages }}
+            - name: pip-extra
+              mountPath: /pip-extra
+            {{- end }}
       volumes:
         - name: config-data
           persistentVolumeClaim:
@@ -89,3 +116,7 @@ spec:
         - name: media
           persistentVolumeClaim:
             claimName: {{ include "beets-flask.mediaClaimName" . }}
+        {{- if .Values.extraPipPackages }}
+        - name: pip-extra
+          emptyDir: {}
+        {{- end }}
