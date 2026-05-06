@@ -59,11 +59,16 @@ jobs:
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Generate matrix
         id: generate
         uses: docker/bake-action/subaction/matrix@v7
         with:
-          workdir: ${{ matrix.image }}
+          workdir: ./docker/${{ matrix.image }}
           target: image
           fields: platforms,args
 
@@ -73,7 +78,7 @@ jobs:
       - detect
       - prepare
     if: needs.detect.outputs.matrix != '[]' && needs.detect.outputs.matrix != ''
-    runs-on: ubuntu-latest
+    runs-on: ${{ startsWith(matrix.platforms, 'linux/arm') && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     strategy:
       matrix:
         image: ${{ fromJson(needs.detect.outputs.matrix) }}
