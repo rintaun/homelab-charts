@@ -7,7 +7,7 @@ target "image" {
 
   matrix = {
     app_version   = ["stable", "latest"]
-    beets_version = ["", "2.10.0"]
+    beets_version = ["", "2.11.0"]
   }
 
   args = {
