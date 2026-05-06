@@ -19,8 +19,21 @@ docker/
 
 ### Dockerfile conventions
 
-Every Dockerfile must declare the application version as a build argument named `APP_VERSION`,
-with the current pinned version as the default:
+Each image directory must include a `VERSION` file containing the local image semver
+used for published tags.
+
+Example:
+
+```
+docker/beets-flask/VERSION
+1.0.0
+```
+
+- `VERSION` is the local image version tag published to GHCR.
+- Upstream versions (for example `APP_VERSION`, `BEETS_VERSION`) are Docker build inputs,
+  not release tags.
+
+Dockerfiles can still use build args like `APP_VERSION`:
 
 ```dockerfile
 ARG APP_VERSION=1.2.3
@@ -32,31 +45,56 @@ ARG APP_VERSION   # re-declare after FROM so it's in scope for RUN steps
 RUN install-tool==${APP_VERSION}
 ```
 
-- **`ARG APP_VERSION`** must appear on the very first line (before `FROM`) so that Renovate can
-  track it for automated version updates.
 - The re-declaration after `FROM` brings the build arg back into scope for subsequent `RUN`
   steps (Docker clears args at each `FROM`).
-- Do not hardcode the version elsewhere in the file — use `${APP_VERSION}` consistently.
+- Keep defaults in Dockerfiles reasonable for local builds.
+
+### Bake conventions
+
+Each image directory should include a `docker-bake.hcl` defining at least one target named
+`image`:
+
+```hcl
+target "docker-metadata-action" {}
+
+target "image" {
+  inherits   = ["docker-metadata-action"]
+  context    = "./docker/beets-flask"
+  dockerfile = "./docker/beets-flask/Dockerfile"
+}
+```
 
 ### CI workflow
 
-A single workflow (`.github/workflows/docker-publish.yml`) handles all images:
+A single workflow (`.github/workflows/docker-publish.yml`) handles all images with
+`docker/metadata-action` + `docker/bake-action`:
 
 - **Push to `main`**: builds and pushes only the images whose `docker/<name>/` directory
-  changed in that push.
-- **Pull request**: builds (but does not push) all changed images for validation.
+  changed in that push. If `Dockerfile` changes, `VERSION` must change in the same diff.
+- **Push to `main` with a `VERSION` bump**: creates a git tag in the form
+  `<image>-v<version>`. This requires a repository secret named `RELEASE_TOKEN`
+  because tags pushed with the default `GITHUB_TOKEN` do not trigger follow-up workflows.
+- **Push tag `*-v*`**: rebuilds the tagged image and publishes semver image tags from the git ref.
+- **Pull request**: builds and pushes changed images under PR/sha tags for validation.
 - **`workflow_dispatch`**: builds and pushes every image regardless of changes.
 
 Each image is published to GHCR as `ghcr.io/<owner>/<name>` with three tags:
 
 | Tag | Example | Notes |
 |---|---|---|
-| App version | `2.10.0` | Extracted from `ARG APP_VERSION=` in the Dockerfile |
-| `latest` | `latest` | Only applied on pushes to the default branch |
-| Short SHA | `sha-abc1234` | Always applied; useful for exact pinning |
+| SemVer | `v1.0.0` | Derived from a git tag like `beets-flask-v1.0.0` |
+| SemVer minor | `v1.0` | Derived from the git tag ref |
+| SemVer major | `v1` | Derived from the git tag ref |
+| Branch ref | `main` | Branch builds |
+| PR ref | `pr-42` | Pull request builds |
+| Short SHA | `sha-abc1234` | Exact source pinning |
 
-To add a new image: create `docker/<name>/Dockerfile` with `ARG APP_VERSION=x.y.z` on the first
-line. The workflow detects it automatically — no workflow changes needed.
+To add a new image:
+1. Create `docker/<name>/Dockerfile`.
+2. Add `docker/<name>/VERSION` with local semver.
+3. Add `docker/<name>/docker-bake.hcl` with target `image`.
+4. Bump `VERSION` whenever you change `Dockerfile`.
+5. Commit all files; pushes to `main` will create the image release tag automatically.
 
 ### Pinning the image in a chart
 

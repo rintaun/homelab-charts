@@ -3,6 +3,8 @@ name: Build & Publish Docker Images
 on:
   push:
     branches: [main]
+    tags:
+      - '*-v*'
     paths:
       - docker/**
   pull_request:
@@ -28,13 +30,20 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             # Manual trigger — build every image.
             images=$(find docker -mindepth 1 -maxdepth 1 -type d | xargs -I{} basename {} | sort)
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            if [[ "${GITHUB_REF_NAME}" =~ ^(.+)-v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+              images="${BASH_REMATCH[1]}"
+            else
+              echo "Unsupported image release tag format: ${GITHUB_REF_NAME}" >&2
+              exit 1
+            fi
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
             git fetch origin ${{ github.base_ref }}
-            images=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- docker/ \
-              | grep '^docker/' | cut -d/ -f2 | sort -u)
+            changed=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- docker/)
+            images=$(echo "$changed" | grep '^docker/[^/]\+/' | cut -d/ -f2 | sort -u)
           else
-            images=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- docker/ \
-              | grep '^docker/' | cut -d/ -f2 | sort -u)
+            changed=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- docker/)
+            images=$(echo "$changed" | grep '^docker/[^/]\+/' | cut -d/ -f2 | sort -u)
           fi
           matrix=$(echo "${images}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
           echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
@@ -56,17 +65,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Extract app version
-        id: version
+      - name: Guard VERSION bump for Dockerfile changes
+        if: github.event_name != 'workflow_dispatch' && !startsWith(github.ref, 'refs/tags/')
         run: |
-          version=$(grep '^ARG APP_VERSION=' docker/${{ matrix.image }}/Dockerfile | cut -d= -f2)
-          echo "value=${version}" >> "$GITHUB_OUTPUT"
+          image="${{ matrix.image }}"
+          dockerfile="docker/${image}/Dockerfile"
+          version_file="docker/${image}/VERSION"
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin "${{ github.base_ref }}"
+            changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- "docker/${image}/")
+          else
+            changed=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- "docker/${image}/")
+          fi
+
+          dockerfile_changed=$(echo "$changed" | grep -Fx "$dockerfile" || true)
+          version_changed=$(echo "$changed" | grep -Fx "$version_file" || true)
+
+          if [ -n "$dockerfile_changed" ] && [ -z "$version_changed" ]; then
+            echo "Dockerfile changed without VERSION bump for ${image}" >&2
+            exit 1
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
       - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -78,19 +102,105 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          flavor: |
+            latest=false
           tags: |
-            type=raw,value=${{ steps.version.outputs.value }}
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
-            type=sha,prefix=sha-,format=short
+            type=semver,pattern=v{{version}},match=^${{ matrix.image }}-v([0-9]+\.[0-9]+\.[0-9]+(?:[.-][0-9A-Za-z.-]+)?)$,enable=${{ startsWith(github.ref, 'refs/tags/') }}
+            type=semver,pattern=v{{major}}.{{minor}},match=^${{ matrix.image }}-v([0-9]+\.[0-9]+\.[0-9]+(?:[.-][0-9A-Za-z.-]+)?)$,enable=${{ startsWith(github.ref, 'refs/tags/') }}
+            type=semver,pattern=v{{major}},match=^${{ matrix.image }}-v([0-9]+\.[0-9]+\.[0-9]+(?:[.-][0-9A-Za-z.-]+)?)$,enable=${{ startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-v0.') }}
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
 
-      - name: Build and push
-        uses: docker/build-push-action@v7
+      - name: Build and push with Bake
+        uses: docker/bake-action@v6
         with:
-          context: docker/${{ matrix.image }}
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            APP_VERSION=${{ steps.version.outputs.value }}
-          cache-from: type=gha,scope=${{ matrix.image }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          source: .
+          files: |
+            ./docker/${{ matrix.image }}/docker-bake.hcl
+            cwd://${{ steps.meta.outputs.bake-file-tags }}
+            cwd://${{ steps.meta.outputs.bake-file-labels }}
+          targets: image
+          push: true
+          set: |
+            *.cache-from=type=gha,scope=${{ matrix.image }}
+            *.cache-to=type=gha,mode=max,scope=${{ matrix.image }}
+
+  tag-release:
+    name: Create image release tags
+    needs:
+      - detect
+      - build
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Create tags for VERSION bumps
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --tags origin
+
+          matrix='${{ needs.detect.outputs.matrix }}'
+          tags_to_push=0
+
+          for image in $(echo "$matrix" | jq -r '.[]'); do
+            version_file="docker/${image}/VERSION"
+
+            if git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- "$version_file" | grep -q .; then
+              tags_to_push=1
+              break
+            fi
+          done
+
+          if [ "$tags_to_push" -eq 1 ] && [ -z "$RELEASE_TOKEN" ]; then
+            echo "RELEASE_TOKEN secret is required to push release tags that trigger tag workflows" >&2
+            exit 1
+          fi
+
+          if [ "$tags_to_push" -eq 0 ]; then
+            echo "No VERSION bumps detected; no release tags created"
+            exit 0
+          fi
+
+          git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/${{ github.repository }}.git"
+
+          for image in $(echo "$matrix" | jq -r '.[]'); do
+            version_file="docker/${image}/VERSION"
+
+            if ! git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- "$version_file" | grep -q .; then
+              continue
+            fi
+
+            if [ ! -f "$version_file" ]; then
+              echo "Missing VERSION file for image: $image" >&2
+              exit 1
+            fi
+
+            version=$(tr -d '[:space:]' < "$version_file")
+
+            if ! echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$'; then
+              echo "Invalid semver in $version_file: $version" >&2
+              exit 1
+            fi
+
+            tag="${image}-v${version}"
+
+            if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+              echo "Release tag already exists: ${tag}" >&2
+              exit 1
+            fi
+
+            git tag -a "$tag" -m "Release ${image} ${version}"
+            git push origin "refs/tags/${tag}"
+          done
