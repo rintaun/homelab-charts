@@ -1,6 +1,6 @@
 target "docker-metadata-action" {}
 
-target "image" {
+target "beets" {
   inherits   = ["docker-metadata-action"]
   dockerfile = "./Dockerfile"
 }

@@ -69,7 +69,7 @@ jobs:
         uses: docker/bake-action/subaction/matrix@v7
         with:
           workdir: ./docker/${{ matrix.image }}
-          target: image
+          target: ${{ matrix.image }}
           fields: platforms,args
 
   build:
