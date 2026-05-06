@@ -98,7 +98,7 @@ jobs:
             ./docker/${{ matrix.image }}/docker-bake.hcl
             cwd://${{ steps.meta.outputs.bake-file-tags }}
             cwd://${{ steps.meta.outputs.bake-file-labels }}
-          targets: local
+          targets: ${{ matrix.image }}
           push: true
           set: |
             *.cache-from=type=gha,scope=${{ matrix.image }}

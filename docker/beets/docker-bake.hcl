@@ -1,6 +1,6 @@
 target "docker-metadata-action" {}
 
-target "local" {
+target "beets" {
   inherits   = ["docker-metadata-action"]
   context    = "./docker/beets"
   dockerfile = "./docker/beets/Dockerfile"
