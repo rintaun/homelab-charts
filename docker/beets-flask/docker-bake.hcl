@@ -21,10 +21,4 @@ target "beets-flask" {
     "linux/amd64",
     "linux/arm64",
   ]
-
-  tags = concat(
-    target.docker-metadata-action.tags, [
-      "rintaun/beets-flask:${app_version}-${beets_version}"
-    ]
-  )
 }
