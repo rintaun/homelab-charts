@@ -55,9 +55,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.detect.outputs.matrix) }}
+        image: ${{ fromJson(needs.detect.outputs.matrix) }}
     outputs:
-          matrix: ${{ steps.generate.outputs.matrix }}
+      matrix: ${{ steps.generate.outputs.matrix }}
     steps:
       - name: Generate matrix
         id: generate
