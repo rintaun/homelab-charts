@@ -72,9 +72,9 @@ A single workflow (`.github/workflows/docker-publish.yml`) handles all images wi
 - **Push to `main`**: builds and pushes only the images whose `docker/<name>/` directory
   changed in that push. If `Dockerfile` changes, `VERSION` must change in the same diff.
 - **Push to `main` with a `VERSION` bump**: creates a git tag in the form
-  `<image>-v<version>`. This requires a repository secret named `RELEASE_TOKEN`
+  `docker-<image>-v<version>`. This requires a repository secret named `RELEASE_TOKEN`
   because tags pushed with the default `GITHUB_TOKEN` do not trigger follow-up workflows.
-- **Push tag `*-v*`**: rebuilds the tagged image and publishes semver image tags from the git ref.
+- **Push tag `docker-*-v*`**: rebuilds the tagged image and publishes semver image tags from the git ref.
 - **Pull request**: builds and pushes changed images under PR/sha tags for validation.
 - **`workflow_dispatch`**: builds and pushes every image regardless of changes.
 
@@ -82,7 +82,7 @@ Each image is published to GHCR as `ghcr.io/<owner>/<name>` with three tags:
 
 | Tag | Example | Notes |
 |---|---|---|
-| SemVer | `v1.0.0` | Derived from a git tag like `beets-flask-v1.0.0` |
+| SemVer | `v1.0.0` | Derived from a git tag like `docker-beets-flask-v1.0.0` |
 | SemVer minor | `v1.0` | Derived from the git tag ref |
 | SemVer major | `v1` | Derived from the git tag ref |
 | Branch ref | `main` | Branch builds |
