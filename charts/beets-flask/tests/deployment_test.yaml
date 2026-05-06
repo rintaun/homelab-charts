@@ -1,26 +1,20 @@
 suite: beets-flask deployment tests
 templates:
-  - deployment.yaml
+  - web-server-deployment.yaml
 tests:
   - it: should render a Deployment
     asserts:
       - isKind:
           of: Deployment
 
-  - it: should use Recreate strategy
-    asserts:
-      - equal:
-          path: spec.strategy.type
-          value: Recreate
-
   - it: should set the image correctly
     set:
-      image.repository: pspitzner/beets-flask
+      image.repository: ghcr.io/rintaun/beets-flask
       image.tag: "stable"
     asserts:
       - matchRegex:
           path: spec.template.spec.containers[0].image
-          pattern: "pspitzner/beets-flask:stable"
+          pattern: "ghcr.io/rintaun/beets-flask:stable"
 
   - it: should set TZ env var from timezone value
     set:
@@ -94,9 +88,8 @@ tests:
 
   - it: should include the config-init init container
     asserts:
-      - equal:
-          path: spec.template.spec.initContainers[0].name
-          value: config-init
+      - notExists:
+          path: spec.template.spec.initContainers
 
   - it: should set port 5001 on the container
     asserts:

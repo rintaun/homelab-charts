@@ -1,0 +1,120 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "beets-flask.fullname" . }}-db-init-{{ .Release.Revision }}
+  labels:
+    {{- include "beets-flask.labels" . | nindent 4 }}
+    component: db-init
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        {{- include "beets-flask.selectorLabels" . | nindent 8 }}
+        component: db-init
+    spec:
+      serviceAccountName: {{ include "beets-flask.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      restartPolicy: Never
+      containers:
+        - name: db-init
+          image: {{ include "beets-flask.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "=== Initializing beets-flask databases ==="
+
+              # Wait for Redis to be ready
+              echo "Waiting for Redis..."
+              attempt=0
+              max_attempts=30
+              while [ $attempt -lt $max_attempts ]; do
+                if redis-cli -h {{ include "beets-flask.fullname" . }}-redis ping 2>/dev/null | grep -q PONG; then
+                  echo "Redis is ready"
+                  break
+                fi
+                attempt=$((attempt + 1))
+                echo "Attempt $attempt/$max_attempts..."
+                sleep 2
+              done
+
+              if [ $attempt -eq $max_attempts ]; then
+                echo "ERROR: Redis did not become ready in time"
+                exit 1
+              fi
+
+              # Run database initialization
+              echo "Running database initialization..."
+              python -u ./beets_flask/worker/launch_db_init.py
+
+              echo "=== Database initialization complete ==="
+          env:
+            - name: TZ
+              value: {{ .Values.timezone | quote }}
+            - name: USER_ID
+              value: {{ .Values.userId | quote }}
+            - name: GROUP_ID
+              value: {{ .Values.groupId | quote }}
+            - name: REDIS_HOST
+              value: "{{ include "beets-flask.fullname" . }}-redis"
+            - name: REDIS_PORT
+              value: "6379"
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+          volumeMounts:
+            - name: config-data
+              mountPath: /config
+            - name: config-beets-cm
+              mountPath: /config-beets-cm
+              readOnly: true
+            - name: config-beets-flask-cm
+              mountPath: /config-beets-flask-cm
+              readOnly: true
+      initContainers:
+        # config-init copies ConfigMap files into the writable config PVC so the main
+        # container can read and update them.
+        - name: config-init
+          image: busybox
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              mkdir -p /config/beets /config/beets-flask
+              cp /config-beets-cm/config.yaml /config/beets/config.yaml
+              cp /config-beets-flask-cm/config.yaml /config/beets-flask/config.yaml
+              chown -R {{ .Values.userId }}:{{ .Values.groupId }} /config/beets /config/beets-flask
+          volumeMounts:
+            - name: config-data
+              mountPath: /config
+            - name: config-beets-cm
+              mountPath: /config-beets-cm
+              readOnly: true
+            - name: config-beets-flask-cm
+              mountPath: /config-beets-flask-cm
+              readOnly: true
+      volumes:
+        - name: config-data
+          persistentVolumeClaim:
+            claimName: {{ include "beets-flask.fullname" . }}-config
+        - name: config-beets-cm
+          configMap:
+            name: {{ include "beets-flask.fullname" . }}-beets-config
+        - name: config-beets-flask-cm
+          configMap:
+            name: {{ include "beets-flask.fullname" . }}-beets-flask-config

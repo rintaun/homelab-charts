@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "beets-flask.fullname" . }}-watchdog
+  labels:
+    {{- include "beets-flask.labels" . | nindent 4 }}
+    component: watchdog-worker
+spec:
+  # ⚠️  CRITICAL: Must be 1. File system watching is not parallelizable.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "beets-flask.selectorLabels" . | nindent 6 }}
+      component: watchdog-worker
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "beets-flask.selectorLabels" . | nindent 8 }}
+        component: watchdog-worker
+    spec:
+      serviceAccountName: {{ include "beets-flask.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: worker
+          image: {{ include "beets-flask.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "=== Starting watchdog worker ==="
+              exec python -u ./beets_flask/worker/launch_watchdog_worker.py
+          env:
+            - name: TZ
+              value: {{ .Values.timezone | quote }}
+            - name: USER_ID
+              value: {{ .Values.userId | quote }}
+            - name: GROUP_ID
+              value: {{ .Values.groupId | quote }}
+            - name: REDIS_HOST
+              value: "{{ include "beets-flask.fullname" . }}-redis"
+            - name: REDIS_PORT
+              value: "6379"
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.watchdogWorker.resources | nindent 12 }}
+          volumeMounts:
+            - name: config-data
+              mountPath: /config
+            - name: media
+              mountPath: /media
+      volumes:
+        - name: config-data
+          persistentVolumeClaim:
+            claimName: {{ include "beets-flask.fullname" . }}-config
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ include "beets-flask.mediaClaimName" . }}

@@ -3,11 +3,11 @@ entries:
   beets-flask:
   - apiVersion: v2
     appVersion: stable
-    created: "2026-05-05T10:05:38.435219753-04:00"
+    created: "2026-05-05T10:20:31.344308108-04:00"
     description: 'Helm chart for beets-flask — a web UI for the beets music organizer.
       Provides a browser-based interface for importing, tagging, and browsing your
       music library with beets. '
-    digest: 6acdf2b8fc1bf2afde1731ca1d2e0597e2cea116cc97c10c0cddf45941b200bc
+    digest: d1810045e43b9f26557472bfda4d54469ae12a296a7eaae1af95028c7c93604f
     home: https://github.com/pSpitzner/beets-flask
     keywords:
     - music
@@ -23,4 +23,4 @@ entries:
     urls:
     - https://rintaun.github.io/homelab-charts/charts/beets-flask-0.1.4.tgz
     version: 0.1.4
-generated: "2026-05-05T10:05:38.43393788-04:00"
+generated: "2026-05-05T10:20:31.341185051-04:00"
