@@ -2,8 +2,6 @@ target "docker-metadata-action" {}
 
 target "beets-flask" {
   inherits   = ["docker-metadata-action"]
-  context    = "./docker/beets-flask"
-  dockerfile = "./docker/beets-flask/Dockerfile"
 
   matrix = {
     app_version   = ["stable", "latest"]
