@@ -14,3 +14,4 @@ spec:
       name: http
   selector:
     {{- include "beets-flask.selectorLabels" . | nindent 4 }}
+    component: web-server

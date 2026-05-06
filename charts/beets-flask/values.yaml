@@ -3,18 +3,112 @@ nameOverride: ""
 # fullnameOverride replaces the fully-qualified release name when set.
 fullnameOverride: ""
 
-# replicaCount is the number of pod replicas to run.
-replicaCount: 1
-
 image:
   # repository is the container image repository.
-  repository: pspitzner/beets-flask
+  repository: ghcr.io/rintaun/beets-flask
   # tag overrides the chart appVersion when set.
   tag: ""
   # digest pins to an immutable image reference. Prepend sha256: or omit the prefix.
   digest: ""
   # pullPolicy is the image pull policy.
   pullPolicy: IfNotPresent
+
+redis:
+  # enabled: true deploys a Redis StatefulSet for the job queue.
+  # Set to false to use an external Redis instance.
+  enabled: true
+
+  replica:
+    # count is the number of Redis replicas.
+    count: 1
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  persistence:
+    # enabled: true creates a PVC for Redis persistence.
+    enabled: true
+    # size is the requested storage capacity.
+    size: 5Gi
+    # storageClass is the Kubernetes StorageClass to use.
+    storageClass: ""
+
+webServer:
+  # replicaCount is the number of web server pod replicas.
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+  # livenessProbe checks if the web server is alive.
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # readinessProbe checks if the web server is ready to accept traffic.
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+previewWorkers:
+  # replicaCount is the number of preview worker pods.
+  # Can be scaled up for faster preview generation.
+  replicaCount: 2
+
+  # maxReplicas sets the upper limit for HPA (if autoscaling is enabled).
+  maxReplicas: 5
+
+  # autoscaling enables Horizontal Pod Autoscaler for preview workers.
+  autoscaling:
+    enabled: false
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+importWorker:
+  # Import worker replicas are hardcoded to 1 in the template.
+  # SQLite does not support concurrent writes. Import jobs must be serialized.
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+watchdogWorker:
+  # Watchdog worker replicas are hardcoded to 1 in the template.
+  # File system watching is not parallelizable.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 serviceAccount:
   # create specifies whether a ServiceAccount should be created.
@@ -65,20 +159,13 @@ groupId: 1000
 extraEnv: []
 
 # extraPipPackages is a list of additional pip packages to install at pod startup,
-# before the main container starts. Use this to upgrade beets or install plugins
-# that are not bundled in the container image.
+# before the main container starts. Use this for plugins or small Python extras
+# that are not bundled in the container image. Prefer the Docker image build-time
+# BEETS_VERSION override for changing the core beets version.
 # Example:
 #   extraPipPackages:
-#     - "beets==2.10.0"
 #     - "beets-alternatives"
 extraPipPackages: []
-
-resources:
-  requests:
-    cpu: 100m
-    memory: 512Mi
-  limits:
-    memory: 2Gi
 
 # beetsConfig is the full beets config.yaml rendered into a ConfigMap.
 # The init container copies this into /config/beets/config.yaml at startup.

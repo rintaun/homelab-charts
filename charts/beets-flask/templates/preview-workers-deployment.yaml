@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "beets-flask.fullname" . }}-preview-worker
+  labels:
+    {{- include "beets-flask.labels" . | nindent 4 }}
+    component: preview-worker
+spec:
+  replicas: {{ .Values.previewWorkers.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "beets-flask.selectorLabels" . | nindent 6 }}
+      component: preview-worker
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "beets-flask.selectorLabels" . | nindent 8 }}
+        component: preview-worker
+    spec:
+      serviceAccountName: {{ include "beets-flask.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: worker
+          image: {{ include "beets-flask.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["rq"]
+          args: ["worker", "preview", "--with-scheduler"]
+          env:
+            - name: TZ
+              value: {{ .Values.timezone | quote }}
+            - name: USER_ID
+              value: {{ .Values.userId | quote }}
+            - name: GROUP_ID
+              value: {{ .Values.groupId | quote }}
+            - name: REDIS_HOST
+              value: "{{ include "beets-flask.fullname" . }}-redis"
+            - name: REDIS_PORT
+              value: "6379"
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.previewWorkers.resources | nindent 12 }}
+          volumeMounts:
+            - name: config-data
+              mountPath: /config
+            - name: media
+              mountPath: /media
+      volumes:
+        - name: config-data
+          persistentVolumeClaim:
+            claimName: {{ include "beets-flask.fullname" . }}-config
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ include "beets-flask.mediaClaimName" . }}
+{{- if .Values.previewWorkers.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "beets-flask.fullname" . }}-preview-worker
+  labels:
+    {{- include "beets-flask.labels" . | nindent 4 }}
+    component: preview-worker
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "beets-flask.fullname" . }}-preview-worker
+  minReplicas: {{ .Values.previewWorkers.replicaCount }}
+  maxReplicas: {{ .Values.previewWorkers.maxReplicas }}
+  metrics:
+  {{- if .Values.previewWorkers.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.previewWorkers.autoscaling.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{- if .Values.previewWorkers.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.previewWorkers.autoscaling.targetMemoryUtilizationPercentage }}
+  {{- end }}
+{{- end }}

@@ -1,4 +1,5 @@
 ---
+# Config PVC (used by both monolithic and distributed architectures)
 # PVC for the /config directory (beets + beets-flask config files and SQLite databases).
 apiVersion: v1
 kind: PersistentVolumeClaim
