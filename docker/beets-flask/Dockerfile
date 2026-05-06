@@ -1,5 +1,5 @@
 ARG APP_VERSION=stable
-ARG BEETS_VERSION=""
+ARG BEETS_VERSION="default"
 
 # Runtime image used by all chart components. Commands are supplied by the
 # Helm templates per workload (web, workers, db init), so no custom entrypoint
@@ -18,7 +18,7 @@ RUN apt-get update \
 # Optionally override the beets version bundled by the upstream image. This is
 # done at build time to avoid mixed runtime environments from ad hoc PYTHONPATH
 # injection.
-RUN if [ -n "$BEETS_VERSION" ]; then \
+RUN if [ "$BEETS_VERSION" != "default" ]; then \
       pip install --no-cache-dir --upgrade "beets==${BEETS_VERSION}"; \
     fi
 
