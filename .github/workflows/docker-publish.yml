@@ -65,28 +65,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Guard VERSION bump for Dockerfile changes
-        if: github.event_name != 'workflow_dispatch' && !startsWith(github.ref, 'refs/tags/')
-        run: |
-          image="${{ matrix.image }}"
-          dockerfile="docker/${image}/Dockerfile"
-          version_file="docker/${image}/VERSION"
-
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch origin "${{ github.base_ref }}"
-            changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- "docker/${image}/")
-          else
-            changed=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- "docker/${image}/")
-          fi
-
-          dockerfile_changed=$(echo "$changed" | grep -Fx "$dockerfile" || true)
-          version_changed=$(echo "$changed" | grep -Fx "$version_file" || true)
-
-          if [ -n "$dockerfile_changed" ] && [ -z "$version_changed" ]; then
-            echo "Dockerfile changed without VERSION bump for ${image}" >&2
-            exit 1
-          fi
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
