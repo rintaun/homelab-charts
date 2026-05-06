@@ -122,9 +122,9 @@ jobs:
         with:
           source: "./docker/${{ matrix.image }}"
           files: |
-            ./docker-bake.hcl
             cwd://${{ steps.meta.outputs.bake-file-tags }}
             cwd://${{ steps.meta.outputs.bake-file-labels }}
+            ./docker-bake.hcl
           targets: ${{ matrix.target }}
           push: true
           set: |
