@@ -9,8 +9,8 @@ target "beets-flask" {
     beets_version = ["", "2.11.0"]
   }
 
-  # Matrix entries must have unique target names or Bake reports duplicate names.
-  name = "beets-flask-${app_version}-${beets_version}"
+  # Matrix entries must have unique target names and only use valid identifier chars.
+  name = "beets-flask-${replace(app_version, ".", "_")}-${replace(beets_version, ".", "_")}"
 
   args = {
     APP_VERSION   = app_version
