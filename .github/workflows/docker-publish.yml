@@ -56,7 +56,8 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.detect.outputs.matrix) }}
-
+    outputs:
+          matrix: ${{ steps.generate.outputs.matrix }}
     steps:
       - name: Generate matrix
         id: generate
