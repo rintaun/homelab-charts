@@ -67,6 +67,30 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-            {{- tpl (toYaml .Values.volumeMounts) . | nindent 12 }}
+            {{- range $vol := .Values.volumes }}
+            {{- range $mount := $vol.mounts }}
+            - name: {{ $vol.name }}
+              mountPath: {{ $mount.path }}
+              {{- if $mount.subPath }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+              {{- if $mount.readOnly }}
+              readOnly: {{ $mount.readOnly }}
+              {{- end }}
+            {{- end }}
+            {{- end }}
       volumes:
-        {{- tpl (toYaml .Values.volumes) . | nindent 8 }}
+        {{- range $vol := .Values.volumes }}
+        - name: {{ $vol.name }}
+          {{- if $vol.persistence }}
+          persistentVolumeClaim:
+            {{- $defaultClaimName := printf "%s-%s" (include "shelfarr.fullname" $) $vol.name }}
+            {{- if eq $vol.name "data" }}
+              {{- $defaultClaimName = include "shelfarr.dataClaimName" $ }}
+            {{- end }}
+            claimName: {{ tpl (default $defaultClaimName $vol.persistence.claimName) $ | quote }}
+          {{- else }}
+          {{- $volSource := omit $vol "name" "persistence" "mounts" }}
+          {{- toYaml $volSource | nindent 10 }}
+          {{- end }}
+        {{- end }}

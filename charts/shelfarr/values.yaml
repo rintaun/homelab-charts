@@ -123,25 +123,29 @@ resources:
     # memory is the Memory limit.
     memory: 512Mi
 
+# persistence configures the database PVC creation.
 persistence:
-  # enabled controls whether a PersistentVolumeClaim is created for Rails database storage.
-  enabled: true
-  # storageClass is the StorageClass to use. Empty string uses the cluster default.
-  storageClass: ""
-  # size is the requested storage capacity.
-  size: 1Gi
   # existingClaimName uses a pre-existing PVC instead of creating one.
   existingClaimName: ""
 
-# volumes defines the pod-level volumes.
-# By default, a data volume is defined pointing to the chart's PVC.
+# volumes configures the storage volumes and their mount paths.
+# Each volume supports:
+#   - name: unique volume name (required)
+#   - mounts: list of paths inside the container where this volume should be mounted (required)
+#   - persistence: optional PVC configuration. Set create=true to have the chart automatically
+#                  create the PVC.
+#   - Any standard Kubernetes volume source (e.g. nfs, emptyDir, hostPath, configMap, secret).
 volumes:
+  # data is the PVC for Rails SQLite database, configuration, and keys.
   - name: data
-    persistentVolumeClaim:
-      # The template will dynamically substitute the correct claimName.
-      claimName: '{{ include "shelfarr.dataClaimName" . }}'
-
-# volumeMounts defines the container-level mounts.
-volumeMounts:
-  - name: data
-    mountPath: /rails/storage
+    persistence:
+      # create specifies whether to automatically generate a PVC for this volume.
+      create: true
+      # size is the PVC storage capacity requested.
+      size: 1Gi
+      # storageClass is the StorageClass to use. Empty string uses the cluster default.
+      storageClass: ""
+      # claimName overrides the generated PVC name.
+      claimName: ""
+    mounts:
+      - path: /rails/storage
