@@ -1,0 +1,151 @@
+{{- if and .Values.persistence.data.enabled (not .Values.persistence.data.existingClaimName) }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "shelfarr.dataClaimName" . }}
+  labels:
+    {{- include "shelfarr.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.persistence.data.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  accessModes:
+    - {{ .Values.persistence.data.accessMode | default "ReadWriteOnce" }}
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: {{ .Values.persistence.data.size }}
+{{- end }}
+
+{{- if and .Values.persistence.audiobooks.enabled (not .Values.persistence.audiobooks.existingClaimName) }}
+{{- if .Values.persistence.audiobooks.volume.nfs.server }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "shelfarr.fullname" . }}-audiobooks-pv
+  labels:
+    {{- include "shelfarr.labels" . | nindent 4 }}
+spec:
+  capacity:
+    storage: {{ .Values.persistence.audiobooks.claim.size }}
+  volumeMode: Filesystem
+  accessModes:
+    {{- toYaml .Values.persistence.audiobooks.claim.accessModes | nindent 4 }}
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: {{ .Values.persistence.audiobooks.claim.storageClassName | default "" | quote }}
+  mountOptions:
+    {{- toYaml .Values.persistence.audiobooks.volume.nfs.mountOptions | nindent 4 }}
+  nfs:
+    server: {{ .Values.persistence.audiobooks.volume.nfs.server }}
+    path: {{ .Values.persistence.audiobooks.volume.nfs.path }}
+{{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "shelfarr.audiobooksClaimName" . }}
+  labels:
+    {{- include "shelfarr.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ .Values.persistence.audiobooks.claim.storageClassName | default "" | quote }}
+  {{- if .Values.persistence.audiobooks.volume.nfs.server }}
+  volumeName: {{ include "shelfarr.fullname" . }}-audiobooks-pv
+  {{- else if .Values.persistence.audiobooks.claim.volumeName }}
+  volumeName: {{ .Values.persistence.audiobooks.claim.volumeName }}
+  {{- end }}
+  accessModes:
+    {{- toYaml .Values.persistence.audiobooks.claim.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.audiobooks.claim.size }}
+{{- end }}
+
+{{- if and .Values.persistence.ebooks.enabled (not .Values.persistence.ebooks.existingClaimName) }}
+{{- if .Values.persistence.ebooks.volume.nfs.server }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "shelfarr.fullname" . }}-ebooks-pv
+  labels:
+    {{- include "shelfarr.labels" . | nindent 4 }}
+spec:
+  capacity:
+    storage: {{ .Values.persistence.ebooks.claim.size }}
+  volumeMode: Filesystem
+  accessModes:
+    {{- toYaml .Values.persistence.ebooks.claim.accessModes | nindent 4 }}
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: {{ .Values.persistence.ebooks.claim.storageClassName | default "" | quote }}
+  mountOptions:
+    {{- toYaml .Values.persistence.ebooks.volume.nfs.mountOptions | nindent 4 }}
+  nfs:
+    server: {{ .Values.persistence.ebooks.volume.nfs.server }}
+    path: {{ .Values.persistence.ebooks.volume.nfs.path }}
+{{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "shelfarr.ebooksClaimName" . }}
+  labels:
+    {{- include "shelfarr.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ .Values.persistence.ebooks.claim.storageClassName | default "" | quote }}
+  {{- if .Values.persistence.ebooks.volume.nfs.server }}
+  volumeName: {{ include "shelfarr.fullname" . }}-ebooks-pv
+  {{- else if .Values.persistence.ebooks.claim.volumeName }}
+  volumeName: {{ .Values.persistence.ebooks.claim.volumeName }}
+  {{- end }}
+  accessModes:
+    {{- toYaml .Values.persistence.ebooks.claim.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.ebooks.claim.size }}
+{{- end }}
+
+{{- if and .Values.persistence.downloads.enabled (not .Values.persistence.downloads.existingClaimName) }}
+{{- if .Values.persistence.downloads.volume.nfs.server }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "shelfarr.fullname" . }}-downloads-pv
+  labels:
+    {{- include "shelfarr.labels" . | nindent 4 }}
+spec:
+  capacity:
+    storage: {{ .Values.persistence.downloads.claim.size }}
+  volumeMode: Filesystem
+  accessModes:
+    {{- toYaml .Values.persistence.downloads.claim.accessModes | nindent 4 }}
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: {{ .Values.persistence.downloads.claim.storageClassName | default "" | quote }}
+  mountOptions:
+    {{- toYaml .Values.persistence.downloads.volume.nfs.mountOptions | nindent 4 }}
+  nfs:
+    server: {{ .Values.persistence.downloads.volume.nfs.server }}
+    path: {{ .Values.persistence.downloads.volume.nfs.path }}
+{{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "shelfarr.downloadsClaimName" . }}
+  labels:
+    {{- include "shelfarr.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ .Values.persistence.downloads.claim.storageClassName | default "" | quote }}
+  {{- if .Values.persistence.downloads.volume.nfs.server }}
+  volumeName: {{ include "shelfarr.fullname" . }}-downloads-pv
+  {{- else if .Values.persistence.downloads.claim.volumeName }}
+  volumeName: {{ .Values.persistence.downloads.claim.volumeName }}
+  {{- end }}
+  accessModes:
+    {{- toYaml .Values.persistence.downloads.claim.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.downloads.claim.size }}
+{{- end }}

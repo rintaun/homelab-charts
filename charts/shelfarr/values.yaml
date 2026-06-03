@@ -1,0 +1,228 @@
+# nameOverride replaces the chart name in resource names when set.
+nameOverride: ""
+# fullnameOverride replaces the fully-qualified release name when set.
+fullnameOverride: ""
+
+# replicaCount is the number of pod replicas to run.
+replicaCount: 1
+
+image:
+  # repository is the container image repository.
+  repository: ghcr.io/pedro-revez-silva/shelfarr
+  # tag overrides the chart appVersion when set.
+  tag: ""
+  # digest pins to an immutable image reference. Prepend sha256: or omit the prefix.
+  digest: ""
+  # pullPolicy is the image pull policy.
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  # create specifies whether a ServiceAccount should be created.
+  create: true
+  # annotations to add to the ServiceAccount.
+  annotations: {}
+  # name overrides the generated name when set.
+  name: ""
+
+# podAnnotations are extra annotations added to the pod.
+podAnnotations: {}
+
+# podSecurityContext sets the security context for the pod.
+podSecurityContext:
+  # runAsNonRoot specifies whether to run the container as a non-root user.
+  runAsNonRoot: true
+  # runAsUser sets the UID for the pod.
+  runAsUser: 1000
+  # runAsGroup sets the GID for the pod.
+  runAsGroup: 1000
+  # fsGroup sets the owner GID of mounted volumes.
+  fsGroup: 1000
+  # seccompProfile sets the seccomp profile for the pod.
+  seccompProfile:
+    # type is the seccomp profile type (e.g. RuntimeDefault).
+    type: RuntimeDefault
+
+# securityContext sets the security context for the shelfarr container.
+# readOnlyRootFilesystem is false because the Rails app writes to logs, tmp, and other directories at runtime.
+securityContext:
+  # allowPrivilegeEscalation controls whether a process can gain more privileges than its parent.
+  allowPrivilegeEscalation: false
+  # readOnlyRootFilesystem makes the container's root filesystem read-only.
+  readOnlyRootFilesystem: false
+  # capabilities defines the container capabilities to add or drop.
+  capabilities:
+    # drop is the list of capabilities to drop from the container.
+    drop:
+      - "ALL"
+
+config:
+  # solidQueueInPuma controls whether background jobs run in the main Puma server thread.
+  solidQueueInPuma: 1
+  # puid sets the user ID for file ownership in the container.
+  puid: 1000
+  # pgid sets the group ID for file ownership in the container.
+  pgid: 1000
+
+# env contains extra environment variables injected into the container (e.g. TZ).
+env:
+  # TZ sets the timezone for the container.
+  TZ: "UTC"
+
+# secret configures credentials for Shelfarr.
+# The master key is needed for decrypting Rails credentials.
+secret:
+  # mode controls how the secret is provided. One of:
+  #   "external" - create an ExternalSecret (requires external-secrets operator)
+  #   "create"   - create a plain Kubernetes Secret from secret.railsMasterKey below
+  #   "existing" - use a pre-existing Secret; set secret.existingSecretName
+  mode: external
+  # existingSecretName is the name of a pre-existing Secret (used when mode=existing).
+  # The Secret must have a "rails-master-key" key.
+  existingSecretName: ""
+  # railsMasterKey is the plaintext Rails master key (used when mode=create).
+  railsMasterKey: ""
+
+# externalSecret configures the ExternalSecret (used when secret.mode=external).
+externalSecret:
+  # secretStoreName is the name of the SecretStore or ClusterSecretStore to use.
+  secretStoreName: vault-backend
+  # secretStoreKind is the kind of secret store (e.g. ClusterSecretStore).
+  secretStoreKind: ClusterSecretStore
+  # refreshInterval is the interval at which to refresh the secret.
+  refreshInterval: 1h
+  # remoteRef specifies the external vault location to retrieve the secret from.
+  remoteRef:
+    # key is the path to the secret in the store.
+    key: secret/shelfarr
+    # property is the specific property key within the secret.
+    property: railsMasterKey
+
+service:
+  # port is the port the shelfarr container listens on.
+  port: 80
+
+ingress:
+  # enabled controls whether an Ingress resource is created.
+  enabled: true
+  # host is the DNS hostname to expose the service on. Leave empty to skip Ingress creation.
+  host: ""
+  # className is the IngressClass to use. Empty string uses the cluster default.
+  className: ""
+  # annotations are added to the Ingress resource metadata.
+  annotations: {}
+
+resources:
+  # requests defines the minimum CPU/Memory resources the container requires.
+  requests:
+    # cpu is the requested CPU limit.
+    cpu: 100m
+    # memory is the requested Memory limit.
+    memory: 256Mi
+  # limits defines the maximum CPU/Memory resources the container can use.
+  limits:
+    # memory is the Memory limit.
+    memory: 512Mi
+
+persistence:
+  # data is the PVC for Rails SQLite database, configuration, and keys.
+  data:
+    # enabled controls whether a PVC is created and mounted for the data directory.
+    enabled: true
+    # storageClass is the StorageClass to use. Empty string uses the cluster default.
+    storageClass: ""
+    # accessMode is the PVC access mode.
+    accessMode: ReadWriteOnce
+    # size is the storage capacity requested.
+    size: 1Gi
+    # existingClaimName uses a pre-existing PVC instead of creating one.
+    existingClaimName: ""
+
+  # audiobooks configures the volume for Audiobookshelf audiobooks.
+  audiobooks:
+    # enabled controls whether the volume is mounted.
+    enabled: false
+    # existingClaimName uses a pre-existing PVC instead of creating one.
+    existingClaimName: ""
+    # claim configures the PVC created by this chart when existingClaimName is empty.
+    claim:
+      # storageClassName is the StorageClass to use. Empty string uses the cluster default.
+      storageClassName: ""
+      # accessModes are the PVC access modes.
+      accessModes:
+        - ReadWriteMany
+      # size is the requested storage capacity.
+      size: 100Gi
+      # volumeName explicitly binds the PVC to a specific PV.
+      volumeName: ""
+    # volume configures a static PersistentVolume bound to the PVC (optional NFS mount).
+    volume:
+      # nfs configures the NFS volume mount options.
+      nfs:
+        # server is the NFS server hostname or IP. Leave empty to skip PV creation.
+        server: ""
+        # path is the exported NFS path.
+        path: ""
+        # mountOptions are the NFS mount options.
+        mountOptions:
+          - hard
+          - nfsvers=4
+
+  # ebooks configures the volume for Audiobookshelf ebooks.
+  ebooks:
+    # enabled controls whether the volume is mounted.
+    enabled: false
+    # existingClaimName uses a pre-existing PVC instead of creating one.
+    existingClaimName: ""
+    # claim configures the PVC created by this chart when existingClaimName is empty.
+    claim:
+      # storageClassName is the StorageClass to use. Empty string uses the cluster default.
+      storageClassName: ""
+      # accessModes are the PVC access modes.
+      accessModes:
+        - ReadWriteMany
+      # size is the requested storage capacity.
+      size: 100Gi
+      # volumeName explicitly binds the PVC to a specific PV.
+      volumeName: ""
+    # volume configures a static PersistentVolume bound to the PVC (optional NFS mount).
+    volume:
+      # nfs configures the NFS volume mount options.
+      nfs:
+        # server is the NFS server hostname or IP. Leave empty to skip PV creation.
+        server: ""
+        # path is the exported NFS path.
+        path: ""
+        # mountOptions are the NFS mount options.
+        mountOptions:
+          - hard
+          - nfsvers=4
+
+  # downloads configures the volume for the download client's completed folder.
+  downloads:
+    # enabled controls whether the volume is mounted.
+    enabled: false
+    # existingClaimName uses a pre-existing PVC instead of creating one.
+    existingClaimName: ""
+    # claim configures the PVC created by this chart when existingClaimName is empty.
+    claim:
+      # storageClassName is the StorageClass to use. Empty string uses the cluster default.
+      storageClassName: ""
+      # accessModes are the PVC access modes.
+      accessModes:
+        - ReadWriteMany
+      # size is the requested storage capacity.
+      size: 100Gi
+      # volumeName explicitly binds the PVC to a specific PV.
+      volumeName: ""
+    # volume configures a static PersistentVolume bound to the PVC (optional NFS mount).
+    volume:
+      # nfs configures the NFS volume mount options.
+      nfs:
+        # server is the NFS server hostname or IP. Leave empty to skip PV creation.
+        server: ""
+        # path is the exported NFS path.
+        path: ""
+        # mountOptions are the NFS mount options.
+        mountOptions:
+          - hard
+          - nfsvers=4

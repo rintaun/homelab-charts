@@ -1,0 +1,106 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shelfarr.fullname" . }}
+  labels:
+    {{- include "shelfarr.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "shelfarr.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "shelfarr.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "shelfarr.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "shelfarr.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            - name: SOLID_QUEUE_IN_PUMA
+              value: {{ .Values.config.solidQueueInPuma | quote }}
+            - name: PUID
+              value: {{ .Values.config.puid | quote }}
+            - name: PGID
+              value: {{ .Values.config.pgid | quote }}
+            - name: RAILS_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shelfarr.secretName" . }}
+                  key: rails-master-key
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /up
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /up
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            {{- if .Values.persistence.data.enabled }}
+            - mountPath: /rails/storage
+              name: data
+            {{- end }}
+            {{- if .Values.persistence.audiobooks.enabled }}
+            - mountPath: /audiobooks
+              name: audiobooks
+            {{- end }}
+            {{- if .Values.persistence.ebooks.enabled }}
+            - mountPath: /ebooks
+              name: ebooks
+            {{- end }}
+            {{- if .Values.persistence.downloads.enabled }}
+            - mountPath: /downloads
+              name: downloads
+            {{- end }}
+      volumes:
+        {{- if .Values.persistence.data.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "shelfarr.dataClaimName" . }}
+        {{- end }}
+        {{- if .Values.persistence.audiobooks.enabled }}
+        - name: audiobooks
+          persistentVolumeClaim:
+            claimName: {{ include "shelfarr.audiobooksClaimName" . }}
+        {{- end }}
+        {{- if .Values.persistence.ebooks.enabled }}
+        - name: ebooks
+          persistentVolumeClaim:
+            claimName: {{ include "shelfarr.ebooksClaimName" . }}
+        {{- end }}
+        {{- if .Values.persistence.downloads.enabled }}
+        - name: downloads
+          persistentVolumeClaim:
+            claimName: {{ include "shelfarr.downloadsClaimName" . }}
+        {{- end }}
