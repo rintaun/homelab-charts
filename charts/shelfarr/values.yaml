@@ -57,11 +57,25 @@ securityContext:
 
 config:
   # solidQueueInPuma controls whether background jobs run in the main Puma server thread.
-  solidQueueInPuma: 1
+  # Defaults to 1 (enabled) in single-server mode, and automatically defaults to 0 (disabled)
+  # when worker.enabled=true. Leave empty to use the auto-calculated default.
+  solidQueueInPuma: ""
   # puid sets the user ID for file ownership in the container.
   puid: 1000
   # pgid sets the group ID for file ownership in the container.
   pgid: 1000
+  # railsLogLevel sets the RAILS_LOG_LEVEL environment variable (e.g. debug, info, warn, error, fatal).
+  railsLogLevel: "info"
+  # railsMaxThreads sets the RAILS_MAX_THREADS environment variable (Puma thread pool size).
+  railsMaxThreads: ""
+  # webConcurrency sets the WEB_CONCURRENCY environment variable (Puma clustered worker processes).
+  webConcurrency: ""
+  # jobConcurrency sets the JOB_CONCURRENCY environment variable (Solid Queue worker concurrency).
+  jobConcurrency: ""
+  # port sets the PORT environment variable (the port Puma listens on inside the container).
+  port: 80
+  # pidfile sets the PIDFILE environment variable.
+  pidfile: ""
 
 # env contains extra environment variables injected into the container (e.g. TZ).
 env:
@@ -73,14 +87,20 @@ env:
 secret:
   # mode controls how the secret is provided. One of:
   #   "external" - create an ExternalSecret (requires external-secrets operator)
-  #   "create"   - create a plain Kubernetes Secret from secret.railsMasterKey below
+  #   "create"   - create a plain Kubernetes Secret from inline values below
   #   "existing" - use a pre-existing Secret; set secret.existingSecretName
   mode: external
   # existingSecretName is the name of a pre-existing Secret (used when mode=existing).
-  # The Secret must have a "rails-master-key" key.
+  # The Secret must have a "RAILS_MASTER_KEY" key.
   existingSecretName: ""
   # railsMasterKey is the plaintext Rails master key (used when mode=create).
   railsMasterKey: ""
+  # activeRecordEncryptionPrimaryKey sets the ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY (used when mode=create).
+  activeRecordEncryptionPrimaryKey: ""
+  # activeRecordEncryptionDeterministicKey sets the ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY (used when mode=create).
+  activeRecordEncryptionDeterministicKey: ""
+  # activeRecordEncryptionKeyDerivationSalt sets the ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT (used when mode=create).
+  activeRecordEncryptionKeyDerivationSalt: ""
 
 # externalSecret configures the ExternalSecret (used when secret.mode=external).
 externalSecret:
@@ -90,12 +110,12 @@ externalSecret:
   secretStoreKind: ClusterSecretStore
   # refreshInterval is the interval at which to refresh the secret.
   refreshInterval: 1h
-  # remoteRef specifies the external vault location to retrieve the secret from.
-  remoteRef:
-    # key is the path to the secret in the store.
-    key: secret/shelfarr
-    # property is the specific property key within the secret.
-    property: railsMasterKey
+  # data defines the list of secrets to retrieve from the external secret store.
+  data:
+    - secretKey: RAILS_MASTER_KEY
+      remoteRef:
+        key: secret/shelfarr
+        property: railsMasterKey
 
 service:
   # port is the port the shelfarr container listens on.
@@ -149,3 +169,20 @@ volumes:
       claimName: ""
     mounts:
       - path: /rails/storage
+
+# worker configures the separate background job worker deployment.
+worker:
+  # enabled controls whether a separate Solid Queue worker deployment is run.
+  enabled: false
+  # replicaCount is the number of worker pods to run.
+  replicaCount: 1
+  # resources defines the resources (cpu/memory requests and limits) for the worker container.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    # limits defines the maximum CPU/Memory resources the container can use.
+    limits:
+      memory: 512Mi
+  # podAnnotations are extra annotations added to the worker pods.
+  podAnnotations: {}

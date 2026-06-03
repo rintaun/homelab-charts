@@ -1,39 +1,37 @@
+{{- if .Values.worker.enabled -}}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "shelfarr.fullname" . }}
+  name: {{ include "shelfarr.fullname" . }}-worker
   labels:
     {{- include "shelfarr.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.worker.replicaCount }}
   strategy:
     type: Recreate
   selector:
     matchLabels:
       {{- include "shelfarr.selectorLabels" . | nindent 6 }}
-      component: web
+      component: worker
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+      {{- with .Values.worker.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
         {{- include "shelfarr.selectorLabels" . | nindent 8 }}
-        component: web
+        component: worker
     spec:
       serviceAccountName: {{ include "shelfarr.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: {{ .Chart.Name }}-worker
           image: {{ include "shelfarr.image" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: {{ .Values.config.port }}
-              protocol: TCP
+          command: ["bundle", "exec", "rake", "solid_queue:start"]
           env:
             {{- range $key, $value := .Values.env }}
             - name: {{ $key }}
@@ -64,11 +62,11 @@ spec:
               value: {{ . | quote }}
             {{- end }}
             - name: SOLID_QUEUE_IN_PUMA
-              value: {{ default (eq .Values.worker.enabled false | ternary "1" "0") .Values.config.solidQueueInPuma | quote }}
+              value: "0"
             - name: PUID
-              value: {{ .Values.config.puid | quote }}
+              value: "1000"
             - name: PGID
-              value: {{ .Values.config.pgid | quote }}
+              value: "1000"
             - name: RAILS_MASTER_KEY
               valueFrom:
                 secretKeyRef:
@@ -97,22 +95,8 @@ spec:
             {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          livenessProbe:
-            httpGet:
-              path: /up
-              port: http
-            initialDelaySeconds: 15
-            periodSeconds: 30
-            failureThreshold: 5
-          readinessProbe:
-            httpGet:
-              path: /up
-              port: http
-            initialDelaySeconds: 10
-            periodSeconds: 15
-            failureThreshold: 3
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml .Values.worker.resources | nindent 12 }}
           volumeMounts:
             {{- range $vol := .Values.volumes }}
             {{- range $mount := $vol.mounts }}
@@ -141,3 +125,4 @@ spec:
           {{- toYaml $volSource | nindent 10 }}
           {{- end }}
         {{- end }}
+{{- end }}
