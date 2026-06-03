@@ -1,0 +1,51 @@
+{{- $multiplePods := or .Values.worker.enabled (gt (int .Values.replicaCount) 1) }}
+
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaimName) }}
+  {{- $dataAccessMode := default ($multiplePods | ternary "ReadWriteMany" "ReadWriteOnce") .Values.persistence.accessMode }}
+  {{- if and $multiplePods (eq $dataAccessMode "ReadWriteOnce") }}
+    {{- fail "persistence.accessMode cannot be ReadWriteOnce when worker is enabled or replicaCount > 1. You must use ReadWriteMany to allow concurrent access." }}
+  {{- end }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "shelfarr.dataClaimName" . }}
+  labels:
+    {{- include "shelfarr.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.persistence.storageClass }}
+  storageClassName: {{ .Values.persistence.storageClass | quote }}
+  {{- end }}
+  accessModes:
+    - {{ $dataAccessMode | quote }}
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size | quote }}
+{{- end }}
+
+{{- range $vol := .Values.extraVolumes }}
+{{- if and $vol.persistence $vol.persistence.create }}
+  {{- $volClaimName := tpl (default (printf "%s-%s" (include "shelfarr.fullname" $) $vol.name) $vol.persistence.claimName) $ }}
+  {{- $volAccessMode := default ($multiplePods | ternary "ReadWriteMany" "ReadWriteOnce") $vol.persistence.accessMode }}
+  {{- if and $multiplePods (eq $volAccessMode "ReadWriteOnce") }}
+    {{- fail (printf "extraVolumes.%s.persistence.accessMode cannot be ReadWriteOnce when worker is enabled or replicaCount > 1. You must use ReadWriteMany to allow concurrent access." $vol.name) }}
+  {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $volClaimName }}
+  labels:
+    {{- include "shelfarr.labels" $ | nindent 4 }}
+spec:
+  {{- if $vol.persistence.storageClass }}
+  storageClassName: {{ $vol.persistence.storageClass | quote }}
+  {{- end }}
+  accessModes:
+    - {{ $volAccessMode | quote }}
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: {{ default "1Gi" $vol.persistence.size | quote }}
+{{- end }}
+{{- end }}

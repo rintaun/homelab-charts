@@ -1,0 +1,188 @@
+# nameOverride replaces the chart name in resource names when set.
+nameOverride: ""
+# fullnameOverride replaces the fully-qualified release name when set.
+fullnameOverride: ""
+
+# replicaCount is the number of pod replicas to run.
+replicaCount: 1
+
+image:
+  # repository is the container image repository.
+  repository: ghcr.io/pedro-revez-silva/shelfarr
+  # tag overrides the chart appVersion when set.
+  tag: ""
+  # digest pins to an immutable image reference. Prepend sha256: or omit the prefix.
+  digest: ""
+  # pullPolicy is the image pull policy.
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  # create specifies whether a ServiceAccount should be created.
+  create: true
+  # annotations to add to the ServiceAccount.
+  annotations: {}
+  # name overrides the generated name when set.
+  name: ""
+
+# podAnnotations are extra annotations added to the pod.
+podAnnotations: {}
+
+# podSecurityContext sets the security context for the pod.
+podSecurityContext:
+  # runAsNonRoot specifies whether to run the container as a non-root user.
+  runAsNonRoot: true
+  # runAsUser sets the UID for the pod.
+  runAsUser: 1000
+  # runAsGroup sets the GID for the pod.
+  runAsGroup: 1000
+  # fsGroup sets the owner GID of mounted volumes.
+  fsGroup: 1000
+  # seccompProfile sets the seccomp profile for the pod.
+  seccompProfile:
+    # type is the seccomp profile type (e.g. RuntimeDefault).
+    type: RuntimeDefault
+
+# securityContext sets the security context for the shelfarr container.
+# readOnlyRootFilesystem is false because the Rails app writes to logs, tmp, and other directories at runtime.
+securityContext:
+  # allowPrivilegeEscalation controls whether a process can gain more privileges than its parent.
+  allowPrivilegeEscalation: false
+  # readOnlyRootFilesystem makes the container's root filesystem read-only.
+  readOnlyRootFilesystem: false
+  # capabilities defines the container capabilities to add or drop.
+  capabilities:
+    # drop is the list of capabilities to drop from the container.
+    drop:
+      - "ALL"
+
+config:
+  # puid sets the user ID for file ownership in the container.
+  puid: 1000
+  # pgid sets the group ID for file ownership in the container.
+  pgid: 1000
+  # railsLogLevel sets the RAILS_LOG_LEVEL environment variable (e.g. debug, info, warn, error, fatal).
+  railsLogLevel: "info"
+  # railsMaxThreads sets the RAILS_MAX_THREADS environment variable (Puma thread pool size).
+  railsMaxThreads: ""
+  # webConcurrency sets the WEB_CONCURRENCY environment variable (Puma clustered worker processes).
+  webConcurrency: ""
+  # jobConcurrency sets the JOB_CONCURRENCY environment variable (Solid Queue worker concurrency).
+  jobConcurrency: ""
+  # port sets the PORT environment variable (the port Puma listens on inside the container).
+  port: 80
+  # pidfile sets the PIDFILE environment variable.
+  pidfile: ""
+
+
+# env contains extra environment variables injected into the container (e.g. TZ).
+env:
+  # TZ sets the timezone for the container.
+  TZ: "UTC"
+
+# secret configures credentials for Shelfarr.
+# The master key is needed for decrypting Rails credentials.
+secret:
+  # existingSecret is the name of a pre-existing Secret.
+  # If set, no Secret resource will be created by the chart.
+  # The Secret must have a "RAILS_MASTER_KEY" key.
+  existingSecret: ""
+  # railsMasterKey is the plaintext Rails master key (used when existingSecret is empty).
+  railsMasterKey: ""
+  # activeRecordEncryptionPrimaryKey sets the ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY (used when existingSecret is empty).
+  activeRecordEncryptionPrimaryKey: ""
+  # activeRecordEncryptionDeterministicKey sets the ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY (used when existingSecret is empty).
+  activeRecordEncryptionDeterministicKey: ""
+  # activeRecordEncryptionKeyDerivationSalt sets the ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT (used when existingSecret is empty).
+  activeRecordEncryptionKeyDerivationSalt: ""
+
+service:
+  # port is the port the shelfarr container listens on.
+  port: 80
+
+ingress:
+  # enabled controls whether an Ingress resource is created.
+  enabled: true
+  # host is the DNS hostname to expose the service on. Leave empty to skip Ingress creation.
+  host: ""
+  # className is the IngressClass to use. Empty string uses the cluster default.
+  className: ""
+  # annotations are added to the Ingress resource metadata.
+  annotations: {}
+
+resources:
+  # requests defines the minimum CPU/Memory resources the container requires.
+  requests:
+    # cpu is the requested CPU limit.
+    cpu: 100m
+    # memory is the requested Memory limit.
+    memory: 256Mi
+  # limits defines the maximum CPU/Memory resources the container can use.
+  limits:
+    # memory is the Memory limit.
+    memory: 512Mi
+
+# livenessProbe configures the container liveness checks.
+livenessProbe:
+  # enabled controls whether a livenessProbe is configured.
+  enabled: true
+  # path is the HTTP path to check.
+  path: /up
+  # initialDelaySeconds is the number of seconds to wait before starting checks.
+  initialDelaySeconds: 15
+  # periodSeconds is the frequency of checks.
+  periodSeconds: 30
+  # failureThreshold is the number of consecutive failures before restarting the container.
+  failureThreshold: 5
+
+# readinessProbe configures the container readiness checks.
+readinessProbe:
+  # enabled controls whether a readinessProbe is configured.
+  enabled: true
+  # path is the HTTP path to check.
+  path: /up
+  # initialDelaySeconds is the number of seconds to wait before starting checks.
+  initialDelaySeconds: 10
+  # periodSeconds is the frequency of checks.
+  periodSeconds: 15
+  # failureThreshold is the number of consecutive failures before removing pod from traffic.
+  failureThreshold: 3
+
+# persistence configures the database PVC creation.
+persistence:
+  # enabled controls whether a PersistentVolumeClaim is created for Rails database storage.
+  enabled: true
+  # storageClass is the StorageClass to use. Empty string uses the cluster default.
+  storageClass: ""
+  # size is the requested storage capacity.
+  size: 1Gi
+  # accessMode is the PVC access mode. Defaults to ReadWriteMany if worker.enabled=true
+  # or replicaCount > 1, and ReadWriteOnce otherwise.
+  accessMode: ""
+  # existingClaimName uses a pre-existing PVC instead of creating one.
+  existingClaimName: ""
+
+# extraVolumes configures additional storage volumes and their mount paths.
+# Both web and worker pods will mount these volumes.
+# Supports:
+#   - name: unique volume name (required)
+#   - mounts: list of paths inside the container where this volume should be mounted (required)
+#   - persistence: optional PVC configuration. Set create=true to have the chart automatically create the PVC.
+#   - Any standard Kubernetes volume source (e.g. nfs, emptyDir, hostPath, configMap, secret).
+extraVolumes: []
+
+# worker configures the separate background job worker deployment.
+worker:
+  # enabled controls whether a separate Solid Queue worker deployment is run.
+  enabled: false
+  # replicaCount is the number of worker pods to run.
+  replicaCount: 1
+  # resources defines the resources (cpu/memory requests and limits) for the worker container.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    # limits defines the maximum CPU/Memory resources the container can use.
+    limits:
+      memory: 512Mi
+  # podAnnotations are extra annotations added to the worker pods.
+  podAnnotations: {}

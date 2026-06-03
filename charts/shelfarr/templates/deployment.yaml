@@ -1,0 +1,156 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shelfarr.fullname" . }}
+  labels:
+    {{- include "shelfarr.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "shelfarr.selectorLabels" . | nindent 6 }}
+      component: web
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "shelfarr.selectorLabels" . | nindent 8 }}
+        component: web
+    spec:
+      serviceAccountName: {{ include "shelfarr.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "shelfarr.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.config.port }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- with .Values.config.railsLogLevel }}
+            - name: RAILS_LOG_LEVEL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.railsMaxThreads }}
+            - name: RAILS_MAX_THREADS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.webConcurrency }}
+            - name: WEB_CONCURRENCY
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.jobConcurrency }}
+            - name: JOB_CONCURRENCY
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.port }}
+            - name: PORT
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.pidfile }}
+            - name: PIDFILE
+              value: {{ . | quote }}
+            {{- end }}
+            - name: SOLID_QUEUE_IN_PUMA
+              value: {{ eq .Values.worker.enabled false | ternary "1" "0" | quote }}
+            - name: PUID
+              value: {{ .Values.config.puid | quote }}
+            - name: PGID
+              value: {{ .Values.config.pgid | quote }}
+            - name: RAILS_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shelfarr.secretName" . }}
+                  key: RAILS_MASTER_KEY
+            {{- if or .Values.secret.activeRecordEncryptionPrimaryKey .Values.secret.existingSecret }}
+            - name: ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shelfarr.secretName" . }}
+                  key: ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
+            {{- end }}
+            {{- if or .Values.secret.activeRecordEncryptionDeterministicKey .Values.secret.existingSecret }}
+            - name: ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shelfarr.secretName" . }}
+                  key: ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
+            {{- end }}
+            {{- if or .Values.secret.activeRecordEncryptionKeyDerivationSalt .Values.secret.existingSecret }}
+            - name: ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shelfarr.secretName" . }}
+                  key: ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
+            {{- end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.livenessProbe.path | quote }}
+              port: http
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.readinessProbe.path | quote }}
+              port: http
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if or .Values.persistence.enabled .Values.extraVolumes }}
+          volumeMounts:
+            {{- if .Values.persistence.enabled }}
+            - name: data
+              mountPath: /rails/storage
+            {{- end }}
+            {{- range $vol := .Values.extraVolumes }}
+            {{- range $mount := $vol.mounts }}
+            - name: {{ $vol.name }}
+              mountPath: {{ $mount.path }}
+              {{- if $mount.subPath }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+              {{- if $mount.readOnly }}
+              readOnly: {{ $mount.readOnly }}
+              {{- end }}
+            {{- end }}
+            {{- end }}
+          {{- end }}
+      {{- if or .Values.persistence.enabled .Values.extraVolumes }}
+      volumes:
+        {{- if .Values.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "shelfarr.dataClaimName" . | quote }}
+        {{- end }}
+        {{- range $vol := .Values.extraVolumes }}
+        - name: {{ $vol.name }}
+          {{- if and $vol.persistence $vol.persistence.create }}
+          persistentVolumeClaim:
+            claimName: {{ tpl (default (printf "%s-%s" (include "shelfarr.fullname" $) $vol.name) $vol.persistence.claimName) $ | quote }}
+          {{- else }}
+          {{- $volSource := omit $vol "name" "persistence" "mounts" }}
+          {{- tpl (toYaml $volSource) $ | nindent 10 }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
