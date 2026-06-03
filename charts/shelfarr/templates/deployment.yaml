@@ -74,21 +74,21 @@ spec:
                 secretKeyRef:
                   name: {{ include "shelfarr.secretName" . }}
                   key: RAILS_MASTER_KEY
-            {{- if or .Values.secret.activeRecordEncryptionPrimaryKey (not (eq .Values.secret.mode "create")) }}
+            {{- if or .Values.secret.activeRecordEncryptionPrimaryKey .Values.secret.existingSecret }}
             - name: ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ include "shelfarr.secretName" . }}
                   key: ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
             {{- end }}
-            {{- if or .Values.secret.activeRecordEncryptionDeterministicKey (not (eq .Values.secret.mode "create")) }}
+            {{- if or .Values.secret.activeRecordEncryptionDeterministicKey .Values.secret.existingSecret }}
             - name: ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ include "shelfarr.secretName" . }}
                   key: ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
             {{- end }}
-            {{- if or .Values.secret.activeRecordEncryptionKeyDerivationSalt (not (eq .Values.secret.mode "create")) }}
+            {{- if or .Values.secret.activeRecordEncryptionKeyDerivationSalt .Values.secret.existingSecret }}
             - name: ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
               valueFrom:
                 secretKeyRef:
