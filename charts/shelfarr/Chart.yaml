@@ -2,7 +2,7 @@ apiVersion: v2
 name: shelfarr
 type: application
 version: 0.1.0
-appVersion: "v0.23.2"
+appVersion: "0.23.2"
 description: >
   Helm chart for Shelfarr — a self-hosted ebook and audiobook request
   and management system for the *arr ecosystem.
