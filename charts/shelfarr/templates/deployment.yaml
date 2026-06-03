@@ -113,14 +113,23 @@ spec:
             failureThreshold: 3
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- if or .Values.persistence.enabled .Values.extraVolumeMounts }}
+          {{- if or .Values.persistence.enabled .Values.extraVolumes }}
           volumeMounts:
             {{- if .Values.persistence.enabled }}
             - name: data
               mountPath: /rails/storage
             {{- end }}
-            {{- if .Values.extraVolumeMounts }}
-            {{- tpl (toYaml .Values.extraVolumeMounts) . | nindent 12 }}
+            {{- range $vol := .Values.extraVolumes }}
+            {{- range $mount := $vol.mounts }}
+            - name: {{ $vol.name }}
+              mountPath: {{ $mount.path }}
+              {{- if $mount.subPath }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+              {{- if $mount.readOnly }}
+              readOnly: {{ $mount.readOnly }}
+              {{- end }}
+            {{- end }}
             {{- end }}
           {{- end }}
       {{- if or .Values.persistence.enabled .Values.extraVolumes }}
@@ -130,7 +139,14 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "shelfarr.dataClaimName" . | quote }}
         {{- end }}
-        {{- if .Values.extraVolumes }}
-        {{- tpl (toYaml .Values.extraVolumes) . | nindent 8 }}
+        {{- range $vol := .Values.extraVolumes }}
+        - name: {{ $vol.name }}
+          {{- if and $vol.persistence $vol.persistence.create }}
+          persistentVolumeClaim:
+            claimName: {{ tpl (default (printf "%s-%s" (include "shelfarr.fullname" $) $vol.name) $vol.persistence.claimName) $ | quote }}
+          {{- else }}
+          {{- $volSource := omit $vol "name" "persistence" "mounts" }}
+          {{- tpl (toYaml $volSource) $ | nindent 10 }}
+          {{- end }}
         {{- end }}
       {{- end }}

@@ -84,11 +84,7 @@ Name of the Secret that holds the Rails master key.
 - mode=create or mode=external: uses the chart fullname
 */}}
 {{- define "shelfarr.secretName" -}}
-{{- if eq .Values.secret.mode "existing" }}
-{{- required "secret.existingSecretName is required when secret.mode is \"existing\"" .Values.secret.existingSecretName }}
-{{- else }}
-{{- include "shelfarr.fullname" . }}
-{{- end }}
+{{- default (include "shelfarr.fullname" .) .Values.secret.existingSecret -}}
 {{- end }}
 
 {{/*
