@@ -403,6 +403,27 @@ entries:
   shelfarr:
   - apiVersion: v2
     appVersion: 0.23.2
+    created: "2026-06-03T03:44:11.393411052Z"
+    description: 'Helm chart for Shelfarr — a self-hosted ebook and audiobook request
+      and management system for the *arr ecosystem. '
+    digest: fe004da82e3418b7b32e596b380d34369fd846565afbf790a45de28b5c35b6cf
+    home: https://shelfarr.org
+    keywords:
+    - books
+    - audiobooks
+    - ebooks
+    - media
+    - request
+    - arr
+    name: shelfarr
+    sources:
+    - https://github.com/Pedro-Revez-Silva/shelfarr
+    type: application
+    urls:
+    - https://github.com/rintaun/homelab-charts/releases/download/shelfarr-0.1.2/shelfarr-0.1.2.tgz
+    version: 0.1.2
+  - apiVersion: v2
+    appVersion: 0.23.2
     created: "2026-06-03T03:25:30.793824138Z"
     description: 'Helm chart for Shelfarr — a self-hosted ebook and audiobook request
       and management system for the *arr ecosystem. '
@@ -443,4 +464,4 @@ entries:
     urls:
     - https://github.com/rintaun/homelab-charts/releases/download/shelfarr-0.1.0/shelfarr-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-03T03:25:30.79386295Z"
+generated: "2026-06-03T03:44:11.393462157Z"
