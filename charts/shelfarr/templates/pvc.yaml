@@ -1,31 +1,18 @@
-{{- range $vol := .Values.volumes }}
-{{- if and $vol.persistence $vol.persistence.create }}
-{{- $claimName := printf "%s-%s" (include "shelfarr.fullname" $) $vol.name }}
-{{- if eq $vol.name "data" }}
-  {{- $claimName = include "shelfarr.dataClaimName" $ }}
-{{- end }}
-{{- $shouldCreate := true }}
-{{- if and (eq $vol.name "data") $.Values.persistence.existingClaimName }}
-  {{- $shouldCreate = false }}
-{{- end }}
-{{- if $shouldCreate }}
----
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaimName) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ default $claimName $vol.persistence.claimName }}
+  name: {{ include "shelfarr.dataClaimName" . }}
   labels:
-    {{- include "shelfarr.labels" $ | nindent 4 }}
+    {{- include "shelfarr.labels" . | nindent 4 }}
 spec:
-  {{- if $vol.persistence.storageClass }}
-  storageClassName: {{ $vol.persistence.storageClass | quote }}
+  {{- if .Values.persistence.storageClass }}
+  storageClassName: {{ .Values.persistence.storageClass | quote }}
   {{- end }}
   accessModes:
-    - {{ default "ReadWriteOnce" $vol.persistence.accessMode }}
+    - ReadWriteOnce
   volumeMode: Filesystem
   resources:
     requests:
-      storage: {{ default "1Gi" $vol.persistence.size }}
-{{- end }}
-{{- end }}
+      storage: {{ .Values.persistence.size | quote }}
 {{- end }}

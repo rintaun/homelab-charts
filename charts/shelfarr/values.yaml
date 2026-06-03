@@ -56,10 +56,6 @@ securityContext:
       - "ALL"
 
 config:
-  # solidQueueInPuma controls whether background jobs run in the main Puma server thread.
-  # Defaults to 1 (enabled) in single-server mode, and automatically defaults to 0 (disabled)
-  # when worker.enabled=true. Leave empty to use the auto-calculated default.
-  solidQueueInPuma: ""
   # puid sets the user ID for file ownership in the container.
   puid: 1000
   # pgid sets the group ID for file ownership in the container.
@@ -76,6 +72,7 @@ config:
   port: 80
   # pidfile sets the PIDFILE environment variable.
   pidfile: ""
+
 
 # env contains extra environment variables injected into the container (e.g. TZ).
 env:
@@ -145,30 +142,22 @@ resources:
 
 # persistence configures the database PVC creation.
 persistence:
+  # enabled controls whether a PersistentVolumeClaim is created for Rails database storage.
+  enabled: true
+  # storageClass is the StorageClass to use. Empty string uses the cluster default.
+  storageClass: ""
+  # size is the requested storage capacity.
+  size: 1Gi
   # existingClaimName uses a pre-existing PVC instead of creating one.
   existingClaimName: ""
 
-# volumes configures the storage volumes and their mount paths.
-# Each volume supports:
-#   - name: unique volume name (required)
-#   - mounts: list of paths inside the container where this volume should be mounted (required)
-#   - persistence: optional PVC configuration. Set create=true to have the chart automatically
-#                  create the PVC.
-#   - Any standard Kubernetes volume source (e.g. nfs, emptyDir, hostPath, configMap, secret).
-volumes:
-  # data is the PVC for Rails SQLite database, configuration, and keys.
-  - name: data
-    persistence:
-      # create specifies whether to automatically generate a PVC for this volume.
-      create: true
-      # size is the PVC storage capacity requested.
-      size: 1Gi
-      # storageClass is the StorageClass to use. Empty string uses the cluster default.
-      storageClass: ""
-      # claimName overrides the generated PVC name.
-      claimName: ""
-    mounts:
-      - path: /rails/storage
+# extraVolumes defines the pod-level volumes.
+# Set standard Kubernetes volume types (nfs, hostPath, emptyDir, secret, configMap) here.
+extraVolumes: []
+
+# extraVolumeMounts defines the container-level mounts.
+# Standard Kubernetes volumeMount spec (name, mountPath, subPath, readOnly) here.
+extraVolumeMounts: []
 
 # worker configures the separate background job worker deployment.
 worker:
