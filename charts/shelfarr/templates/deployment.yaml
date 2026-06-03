@@ -67,40 +67,6 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-            {{- if .Values.persistence.data.enabled }}
-            - mountPath: /rails/storage
-              name: data
-            {{- end }}
-            {{- if .Values.persistence.audiobooks.enabled }}
-            - mountPath: /audiobooks
-              name: audiobooks
-            {{- end }}
-            {{- if .Values.persistence.ebooks.enabled }}
-            - mountPath: /ebooks
-              name: ebooks
-            {{- end }}
-            {{- if .Values.persistence.downloads.enabled }}
-            - mountPath: /downloads
-              name: downloads
-            {{- end }}
+            {{- tpl (toYaml .Values.volumeMounts) . | nindent 12 }}
       volumes:
-        {{- if .Values.persistence.data.enabled }}
-        - name: data
-          persistentVolumeClaim:
-            claimName: {{ include "shelfarr.dataClaimName" . }}
-        {{- end }}
-        {{- if .Values.persistence.audiobooks.enabled }}
-        - name: audiobooks
-          persistentVolumeClaim:
-            claimName: {{ include "shelfarr.audiobooksClaimName" . }}
-        {{- end }}
-        {{- if .Values.persistence.ebooks.enabled }}
-        - name: ebooks
-          persistentVolumeClaim:
-            claimName: {{ include "shelfarr.ebooksClaimName" . }}
-        {{- end }}
-        {{- if .Values.persistence.downloads.enabled }}
-        - name: downloads
-          persistentVolumeClaim:
-            claimName: {{ include "shelfarr.downloadsClaimName" . }}
-        {{- end }}
+        {{- tpl (toYaml .Values.volumes) . | nindent 8 }}

@@ -124,105 +124,24 @@ resources:
     memory: 512Mi
 
 persistence:
-  # data is the PVC for Rails SQLite database, configuration, and keys.
-  data:
-    # enabled controls whether a PVC is created and mounted for the data directory.
-    enabled: true
-    # storageClass is the StorageClass to use. Empty string uses the cluster default.
-    storageClass: ""
-    # accessMode is the PVC access mode.
-    accessMode: ReadWriteOnce
-    # size is the storage capacity requested.
-    size: 1Gi
-    # existingClaimName uses a pre-existing PVC instead of creating one.
-    existingClaimName: ""
+  # enabled controls whether a PersistentVolumeClaim is created for Rails database storage.
+  enabled: true
+  # storageClass is the StorageClass to use. Empty string uses the cluster default.
+  storageClass: ""
+  # size is the requested storage capacity.
+  size: 1Gi
+  # existingClaimName uses a pre-existing PVC instead of creating one.
+  existingClaimName: ""
 
-  # audiobooks configures the volume for Audiobookshelf audiobooks.
-  audiobooks:
-    # enabled controls whether the volume is mounted.
-    enabled: false
-    # existingClaimName uses a pre-existing PVC instead of creating one.
-    existingClaimName: ""
-    # claim configures the PVC created by this chart when existingClaimName is empty.
-    claim:
-      # storageClassName is the StorageClass to use. Empty string uses the cluster default.
-      storageClassName: ""
-      # accessModes are the PVC access modes.
-      accessModes:
-        - ReadWriteMany
-      # size is the requested storage capacity.
-      size: 100Gi
-      # volumeName explicitly binds the PVC to a specific PV.
-      volumeName: ""
-    # volume configures a static PersistentVolume bound to the PVC (optional NFS mount).
-    volume:
-      # nfs configures the NFS volume mount options.
-      nfs:
-        # server is the NFS server hostname or IP. Leave empty to skip PV creation.
-        server: ""
-        # path is the exported NFS path.
-        path: ""
-        # mountOptions are the NFS mount options.
-        mountOptions:
-          - hard
-          - nfsvers=4
+# volumes defines the pod-level volumes.
+# By default, a data volume is defined pointing to the chart's PVC.
+volumes:
+  - name: data
+    persistentVolumeClaim:
+      # The template will dynamically substitute the correct claimName.
+      claimName: '{{ include "shelfarr.dataClaimName" . }}'
 
-  # ebooks configures the volume for Audiobookshelf ebooks.
-  ebooks:
-    # enabled controls whether the volume is mounted.
-    enabled: false
-    # existingClaimName uses a pre-existing PVC instead of creating one.
-    existingClaimName: ""
-    # claim configures the PVC created by this chart when existingClaimName is empty.
-    claim:
-      # storageClassName is the StorageClass to use. Empty string uses the cluster default.
-      storageClassName: ""
-      # accessModes are the PVC access modes.
-      accessModes:
-        - ReadWriteMany
-      # size is the requested storage capacity.
-      size: 100Gi
-      # volumeName explicitly binds the PVC to a specific PV.
-      volumeName: ""
-    # volume configures a static PersistentVolume bound to the PVC (optional NFS mount).
-    volume:
-      # nfs configures the NFS volume mount options.
-      nfs:
-        # server is the NFS server hostname or IP. Leave empty to skip PV creation.
-        server: ""
-        # path is the exported NFS path.
-        path: ""
-        # mountOptions are the NFS mount options.
-        mountOptions:
-          - hard
-          - nfsvers=4
-
-  # downloads configures the volume for the download client's completed folder.
-  downloads:
-    # enabled controls whether the volume is mounted.
-    enabled: false
-    # existingClaimName uses a pre-existing PVC instead of creating one.
-    existingClaimName: ""
-    # claim configures the PVC created by this chart when existingClaimName is empty.
-    claim:
-      # storageClassName is the StorageClass to use. Empty string uses the cluster default.
-      storageClassName: ""
-      # accessModes are the PVC access modes.
-      accessModes:
-        - ReadWriteMany
-      # size is the requested storage capacity.
-      size: 100Gi
-      # volumeName explicitly binds the PVC to a specific PV.
-      volumeName: ""
-    # volume configures a static PersistentVolume bound to the PVC (optional NFS mount).
-    volume:
-      # nfs configures the NFS volume mount options.
-      nfs:
-        # server is the NFS server hostname or IP. Leave empty to skip PV creation.
-        server: ""
-        # path is the exported NFS path.
-        path: ""
-        # mountOptions are the NFS mount options.
-        mountOptions:
-          - hard
-          - nfsvers=4
+# volumeMounts defines the container-level mounts.
+volumeMounts:
+  - name: data
+    mountPath: /rails/storage

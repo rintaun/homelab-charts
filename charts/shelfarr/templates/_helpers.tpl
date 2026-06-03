@@ -95,26 +95,5 @@ Name of the Secret that holds the Rails master key.
 Name of the PVC used for data.
 */}}
 {{- define "shelfarr.dataClaimName" -}}
-{{- default (printf "%s-data" (include "shelfarr.fullname" .)) .Values.persistence.data.existingClaimName }}
-{{- end }}
-
-{{/*
-Name of the PVC used for audiobooks.
-*/}}
-{{- define "shelfarr.audiobooksClaimName" -}}
-{{- default (printf "%s-audiobooks" (include "shelfarr.fullname" .)) .Values.persistence.audiobooks.existingClaimName }}
-{{- end }}
-
-{{/*
-Name of the PVC used for ebooks.
-*/}}
-{{- define "shelfarr.ebooksClaimName" -}}
-{{- default (printf "%s-ebooks" (include "shelfarr.fullname" .)) .Values.persistence.ebooks.existingClaimName }}
-{{- end }}
-
-{{/*
-Name of the PVC used for downloads.
-*/}}
-{{- define "shelfarr.downloadsClaimName" -}}
-{{- default (printf "%s-downloads" (include "shelfarr.fullname" .)) .Values.persistence.downloads.existingClaimName }}
+{{- default (printf "%s-data" (include "shelfarr.fullname" .)) .Values.persistence.existingClaimName }}
 {{- end }}
