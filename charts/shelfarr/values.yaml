@@ -121,6 +121,32 @@ resources:
     # memory is the Memory limit.
     memory: 512Mi
 
+# livenessProbe configures the container liveness checks.
+livenessProbe:
+  # enabled controls whether a livenessProbe is configured.
+  enabled: true
+  # path is the HTTP path to check.
+  path: /up
+  # initialDelaySeconds is the number of seconds to wait before starting checks.
+  initialDelaySeconds: 15
+  # periodSeconds is the frequency of checks.
+  periodSeconds: 30
+  # failureThreshold is the number of consecutive failures before restarting the container.
+  failureThreshold: 5
+
+# readinessProbe configures the container readiness checks.
+readinessProbe:
+  # enabled controls whether a readinessProbe is configured.
+  enabled: true
+  # path is the HTTP path to check.
+  path: /up
+  # initialDelaySeconds is the number of seconds to wait before starting checks.
+  initialDelaySeconds: 10
+  # periodSeconds is the frequency of checks.
+  periodSeconds: 15
+  # failureThreshold is the number of consecutive failures before removing pod from traffic.
+  failureThreshold: 3
+
 # persistence configures the database PVC creation.
 persistence:
   # enabled controls whether a PersistentVolumeClaim is created for Rails database storage.
