@@ -400,4 +400,26 @@ entries:
     urls:
     - https://github.com/rintaun/homelab-charts/releases/download/papra-0.1.0/papra-0.1.0.tgz
     version: 0.1.0
-generated: "2026-05-05T14:09:59.973804459Z"
+  shelfarr:
+  - apiVersion: v2
+    appVersion: v0.23.2
+    created: "2026-06-03T01:44:07.492353738Z"
+    description: 'Helm chart for Shelfarr — a self-hosted ebook and audiobook request
+      and management system for the *arr ecosystem. '
+    digest: 6921d3f6205d8b77ada1adc25f69bebc8be3470f0643b0d9f4988f6821d3935e
+    home: https://shelfarr.org
+    keywords:
+    - books
+    - audiobooks
+    - ebooks
+    - media
+    - request
+    - arr
+    name: shelfarr
+    sources:
+    - https://github.com/Pedro-Revez-Silva/shelfarr
+    type: application
+    urls:
+    - https://github.com/rintaun/homelab-charts/releases/download/shelfarr-0.1.0/shelfarr-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-06-03T01:44:07.492390205Z"
