@@ -67,11 +67,13 @@ spec:
               value: {{ .Values.config.puid | quote }}
             - name: PGID
               value: {{ .Values.config.pgid | quote }}
-            - name: RAILS_MASTER_KEY
+            {{- if or .Values.secret.secretKeyBase .Values.secret.existingSecret }}
+            - name: SECRET_KEY_BASE
               valueFrom:
                 secretKeyRef:
                   name: {{ include "shelfarr.secretName" . }}
-                  key: RAILS_MASTER_KEY
+                  key: SECRET_KEY_BASE
+            {{- end }}
             {{- if or .Values.secret.activeRecordEncryptionPrimaryKey .Values.secret.existingSecret }}
             - name: ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
               valueFrom:
