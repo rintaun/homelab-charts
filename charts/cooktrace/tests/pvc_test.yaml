@@ -1,0 +1,40 @@
+suite: cooktrace persistence tests
+templates:
+  - pvc.yaml
+tests:
+  - it: should render db and uploads PVCs by default
+    asserts:
+      - hasDocuments:
+          count: 2
+      - isKind:
+          of: PersistentVolumeClaim
+
+  - it: should name the PVCs after the release
+    asserts:
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-cooktrace-db
+        documentIndex: 0
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-cooktrace-uploads
+        documentIndex: 1
+
+  - it: should set the storage class when provided
+    set:
+      persistence.db.storageClass: longhorn
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: longhorn
+
+  - it: should skip PVCs that use an existing claim
+    set:
+      persistence.db.existingClaimName: my-db
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-cooktrace-uploads
