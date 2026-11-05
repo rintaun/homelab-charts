@@ -1,0 +1,193 @@
+suite: cooktrace deployment tests
+templates:
+  - deployment.yaml
+tests:
+  - it: should render a Deployment
+    asserts:
+      - isKind:
+          of: Deployment
+
+  - it: should use Recreate strategy
+    asserts:
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+
+  - it: should pin the default image by digest
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^ghcr.io/traceapps/cooktrace:latest@sha256:[0-9a-f]{64}$"
+
+  - it: should add the sha256 prefix to a bare digest
+    set:
+      image.tag: "1.0.0"
+      image.digest: "abc123"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/traceapps/cooktrace:1.0.0@sha256:abc123"
+
+  - it: should reference the secret for JWT_SECRET
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-cooktrace
+                key: jwt-secret
+
+  - it: should mark optional credentials as optional
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OIDC_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-cooktrace
+                key: oidc-client-secret
+                optional: true
+
+  - it: should use secret.secretName when set
+    set:
+      secret.secretName: my-secret
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: my-secret
+                key: jwt-secret
+
+  - it: should not render optional config env vars by default
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OIDC_ISSUER
+          any: true
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OIDC_AUTO_LINK
+          any: true
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: INSECURE_COOKIES
+          any: true
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MCP_ENABLED
+          any: true
+
+  - it: should render OIDC settings
+    set:
+      config.oidc.issuer: https://auth.example.com/application/o/cooktrace/
+      config.oidc.clientId: abc
+      config.oidc.autoRegister: true
+      config.oidc.autoLink: false
+      config.oidc.enableEmailPasswordLogin: false
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OIDC_ISSUER
+            value: https://auth.example.com/application/o/cooktrace/
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OIDC_CLIENT_ID
+            value: abc
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OIDC_AUTO_REGISTER
+            value: "1"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OIDC_AUTO_LINK
+            value: "0"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OIDC_ENABLE_EMAIL_PASSWORD_LOGIN
+            value: "0"
+
+  - it: should render boolean feature flags as "1"
+    set:
+      config.mcp.enabled: true
+      config.webhooks.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MCP_ENABLED
+            value: "1"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: WEBHOOKS_ENABLED
+            value: "1"
+
+  - it: should prefix health probes with baseUrl
+    set:
+      config.baseUrl: /cooktrace/
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /cooktrace/api/health
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /cooktrace/api/health
+
+  - it: should pass through generic env vars
+    set:
+      env.TZ: America/New_York
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TZ
+            value: America/New_York
+
+  - it: should mount an emptyDir at /tmp for the read-only root filesystem
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: tmp
+            mountPath: /tmp
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: tmp
+            emptyDir: {}
+
+  - it: should use existing claims when set
+    set:
+      persistence.db.existingClaimName: my-db
+      persistence.uploads.existingClaimName: my-uploads
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: db
+            persistentVolumeClaim:
+              claimName: my-db
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: uploads
+            persistentVolumeClaim:
+              claimName: my-uploads

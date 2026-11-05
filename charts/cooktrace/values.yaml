@@ -1,0 +1,248 @@
+# nameOverride overrides the chart name used in resource names.
+nameOverride: ""
+# fullnameOverride overrides the full resource name (release-chart).
+fullnameOverride: ""
+
+# replicaCount is the number of pod replicas to run. CookTrace uses SQLite, so keep this at 1.
+replicaCount: 1
+
+image:
+  # repository is the container image repository.
+  repository: ghcr.io/traceapps/cooktrace
+  # tag overrides the chart appVersion when set.
+  # Upstream only publishes "latest" and "dev" tags (no version tags), so the default is
+  # "latest" pinned by digest below. Bump the digest together with appVersion.
+  tag: "latest"
+  # digest pins to an immutable image reference. Prepend sha256: or omit the prefix.
+  # This digest is the "latest" image built for v1.4.1 (commit f2734f0).
+  digest: "sha256:23aab754ad3c4c4ca3ee95f6c5765cf81f2b89453d827a517b50db6751de9a52"
+  # pullPolicy is the image pull policy.
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  # create specifies whether a ServiceAccount should be created.
+  create: true
+  # annotations to add to the ServiceAccount.
+  annotations: {}
+  # name overrides the generated name when set.
+  name: ""
+
+# podAnnotations are added to the pod template metadata.
+podAnnotations: {}
+
+# podSecurityContext sets the security context for the pod.
+# The upstream image runs as root by default; uid/gid 1000 is the "node" user that ships in
+# the node:alpine base image, and fsGroup makes the mounted volumes writable for it.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  fsGroupChangePolicy: OnRootMismatch
+  seccompProfile:
+    type: RuntimeDefault
+
+# securityContext sets the security context for the cooktrace container.
+# CookTrace only writes to /data/db, /data/uploads, and the OS temp dir; /tmp is mounted as an
+# emptyDir so the root filesystem can stay read-only.
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 768Mi
+
+service:
+  # port is the HTTP port CookTrace listens on (sets PORT).
+  port: 3003
+
+ingress:
+  # enabled controls whether an Ingress resource is created. Set to false to expose the service
+  # via other means (e.g. LoadBalancer, NodePort, service mesh).
+  enabled: true
+  # host is the fully-qualified hostname for the ingress. Leave empty to skip ingress creation.
+  host: ""
+  # className is the IngressClass to use. Empty string uses the cluster's default IngressClass.
+  className: ""
+  # annotations are added to the Ingress resource metadata.
+  annotations: {}
+
+persistence:
+  # db holds the SQLite database (mounted at /data/db).
+  db:
+    # existingClaimName uses a pre-existing PVC instead of creating one.
+    existingClaimName: ""
+    # storageClass is the StorageClass to use. Empty string uses the cluster default.
+    storageClass: ""
+    # size is the requested storage capacity.
+    size: 1Gi
+  # uploads holds recipe photos, attachments, and backup archives (mounted at /data/uploads).
+  uploads:
+    # existingClaimName uses a pre-existing PVC instead of creating one.
+    existingClaimName: ""
+    # storageClass is the StorageClass to use. Empty string uses the cluster default.
+    storageClass: ""
+    # size is the requested storage capacity.
+    size: 5Gi
+
+# env is a map of generic pass-through environment variables (e.g. TZ). Chart-specific settings
+# belong under config instead.
+env: {}
+
+config:
+  # baseUrl sets BASE_URL to serve the app under a subpath (e.g. "/cooktrace"). Empty serves at /.
+  baseUrl: ""
+  # appOrigin sets APP_ORIGIN, the public origin used in links inside emails
+  # (e.g. "https://cooktrace.example.com").
+  appOrigin: ""
+  # logLevel sets LOG_LEVEL. One of: error, warn, info, debug. Empty uses the default (info).
+  logLevel: ""
+  # insecureCookies sets INSECURE_COOKIES=1 so auth cookies work over plain HTTP.
+  # Only enable this when there is no TLS in front of CookTrace.
+  insecureCookies: false
+  # maxSessionHours sets MAX_SESSION_HOURS. Empty uses the default (8760, one year).
+  maxSessionHours: ""
+  # importZipMaxMb sets IMPORT_ZIP_MAX_MB, the size cap for Mealie/Tandoor/Paprika imports.
+  importZipMaxMb: ""
+  # backupUploadMaxMb sets BACKUP_UPLOAD_MAX_MB, the size cap for restoring a full backup.
+  backupUploadMaxMb: ""
+  # updateCheck sets UPDATE_CHECK. Set to "off" to disable GitHub release checks permanently.
+  # Empty leaves the choice to the Settings UI.
+  updateCheck: ""
+  # allowPrivateRecipeUrls sets ALLOW_PRIVATE_RECIPE_URLS=1 so every account can import recipes
+  # from private-network addresses.
+  allowPrivateRecipeUrls: false
+
+  backup:
+    # schedule sets BACKUP_SCHEDULE. One of: off, daily, weekly, monthly. Empty leaves it to the UI.
+    schedule: ""
+    # time sets BACKUP_TIME (HH:MM, container time zone).
+    time: ""
+    # retention sets BACKUP_RETENTION, the number of backups to keep.
+    retention: ""
+
+  smtp:
+    # host sets SMTP_HOST. Empty leaves SMTP to the Settings UI. The password comes from the
+    # Secret key "smtp-pass".
+    host: ""
+    # port sets SMTP_PORT.
+    port: ""
+    # secure sets SMTP_SECURE. Use "true" for implicit TLS (port 465), "false" for STARTTLS.
+    secure: ""
+    # user sets SMTP_USER.
+    user: ""
+    # from sets SMTP_FROM (e.g. "CookTrace <noreply@example.com>").
+    from: ""
+
+  oidc:
+    # issuer sets OIDC_ISSUER. Empty disables env-defined SSO. The client secret comes from the
+    # Secret key "oidc-client-secret".
+    issuer: ""
+    # clientId sets OIDC_CLIENT_ID.
+    clientId: ""
+    # displayName sets OIDC_DISPLAY_NAME, the label on the login button.
+    displayName: ""
+    # redirectUris sets OIDC_REDIRECT_URIS (comma-separated).
+    # CookTrace's callback is <origin><baseUrl>/api/auth/oidc/callback/1.
+    redirectUris: ""
+    # scope sets OIDC_SCOPE. Empty uses the default ("openid profile email").
+    scope: ""
+    # tokenAuthMethod sets OIDC_TOKEN_AUTH_METHOD. One of: client_secret_post,
+    # client_secret_basic, none.
+    tokenAuthMethod: ""
+    # adminGroupClaim sets OIDC_ADMIN_GROUP_CLAIM, the claim checked for admin membership.
+    adminGroupClaim: ""
+    # adminGroupValue sets OIDC_ADMIN_GROUP_VALUE, the group that grants admin.
+    adminGroupValue: ""
+    # autoLink sets OIDC_AUTO_LINK (links verified emails to existing users). null keeps the
+    # application default (enabled).
+    autoLink: null
+    # autoRegister sets OIDC_AUTO_REGISTER (creates accounts on first SSO login). null keeps the
+    # application default (disabled).
+    autoRegister: null
+    # enableEmailPasswordLogin sets OIDC_ENABLE_EMAIL_PASSWORD_LOGIN. false makes SSO the only
+    # way to sign in. null leaves the toggle to the Settings UI.
+    enableEmailPasswordLogin: null
+
+  ai:
+    # enabled sets AI_ENABLED=true, turning on the AI assistant for all users.
+    enabled: false
+    # provider sets AI_PROVIDER. One of: claude, openai, gemini, oai-compat. Empty leaves AI
+    # configuration to each user. The API key comes from the Secret key "ai-api-key".
+    provider: ""
+    # model sets AI_MODEL. Required for oai-compat.
+    model: ""
+    # baseUrl sets AI_BASE_URL. Required for oai-compat (e.g. "http://ollama:11434").
+    baseUrl: ""
+    # allowPrivateUrls sets ALLOW_PRIVATE_AI_URLS=1 so every account may point its own AI
+    # settings at private-network addresses.
+    allowPrivateUrls: false
+
+  mcp:
+    # enabled sets MCP_ENABLED=1, exposing the MCP server at /api/mcp.
+    enabled: false
+    # writeEnabled sets MCP_WRITE_ENABLED=1.
+    writeEnabled: false
+    # destroyEnabled sets MCP_DESTROY_ENABLED=1.
+    destroyEnabled: false
+    # allowedOrigins sets ALLOWED_ORIGINS for browser-based MCP clients.
+    allowedOrigins: ""
+
+  publicApi:
+    # enabled sets PUBLIC_API_ENABLED=1.
+    enabled: false
+    # writeEnabled sets PUBLIC_API_WRITE_ENABLED=1.
+    writeEnabled: false
+
+  webhooks:
+    # enabled sets WEBHOOKS_ENABLED=1.
+    enabled: false
+    # allowPrivateUrls sets ALLOW_PRIVATE_WEBHOOK_URLS=1 (e.g. for an in-cluster Home Assistant).
+    allowPrivateUrls: false
+
+# secret configures the credentials CookTrace reads from a Secret.
+# Keys: jwt-secret (required), token-enc-key, recovery-token, oidc-client-secret, smtp-pass,
+# ai-api-key. Every key except jwt-secret is optional and only injected when present.
+secret:
+  # create controls whether the chart creates the Secret.
+  # Defaults to false — provide a pre-existing Secret via secretName instead,
+  # or set create=true and supply values below only for local/dev use.
+  create: false
+  # secretName overrides the generated Secret name when set.
+  # When create=false, this must name the pre-existing Secret to use.
+  # Defaults to the chart fullname when empty.
+  secretName: ""
+  # jwtSecret signs session tokens. Required when create=true. Generate with
+  # `openssl rand -base64 48`.
+  jwtSecret: ""
+  # tokenEncKey encrypts stored OIDC client secrets. Defaults to a key derived from jwtSecret.
+  tokenEncKey: ""
+  # recoveryToken enables the login-page lockout recovery option.
+  recoveryToken: ""
+  # oidcClientSecret is the OIDC client secret.
+  oidcClientSecret: ""
+  # smtpPass is the SMTP password.
+  smtpPass: ""
+  # aiApiKey is the shared AI provider API key.
+  aiApiKey: ""
+
+# probes configures the liveness and readiness probes against /api/health.
+probes:
+  liveness:
+    # initialDelaySeconds is the delay before the first liveness check.
+    initialDelaySeconds: 15
+    # periodSeconds is how often the liveness check runs.
+    periodSeconds: 30
+    # failureThreshold is how many failures restart the container.
+    failureThreshold: 5
+  readiness:
+    # initialDelaySeconds is the delay before the first readiness check.
+    initialDelaySeconds: 5
+    # periodSeconds is how often the readiness check runs.
+    periodSeconds: 10

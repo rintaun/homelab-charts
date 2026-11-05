@@ -1,0 +1,257 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cooktrace.fullname" . }}
+  labels:
+    {{- include "cooktrace.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "cooktrace.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "cooktrace.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "cooktrace.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "cooktrace.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: PORT
+              value: {{ .Values.service.port | quote }}
+            - name: DB_PATH
+              value: /data/db/cooktrace.db
+            - name: UPLOADS_PATH
+              value: /data/uploads
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "cooktrace.secretName" . }}
+                  key: jwt-secret
+            {{- range $envName, $key := dict "TOKEN_ENC_KEY" "token-enc-key" "RECOVERY_TOKEN" "recovery-token" "OIDC_CLIENT_SECRET" "oidc-client-secret" "SMTP_PASS" "smtp-pass" "AI_API_KEY" "ai-api-key" }}
+            - name: {{ $envName }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "cooktrace.secretName" $ }}
+                  key: {{ $key }}
+                  optional: true
+            {{- end }}
+            {{- with .Values.config.baseUrl }}
+            - name: BASE_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.appOrigin }}
+            - name: APP_ORIGIN
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.logLevel }}
+            - name: LOG_LEVEL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.config.insecureCookies }}
+            - name: INSECURE_COOKIES
+              value: "1"
+            {{- end }}
+            {{- with .Values.config.maxSessionHours }}
+            - name: MAX_SESSION_HOURS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.importZipMaxMb }}
+            - name: IMPORT_ZIP_MAX_MB
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.backupUploadMaxMb }}
+            - name: BACKUP_UPLOAD_MAX_MB
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.updateCheck }}
+            - name: UPDATE_CHECK
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.config.allowPrivateRecipeUrls }}
+            - name: ALLOW_PRIVATE_RECIPE_URLS
+              value: "1"
+            {{- end }}
+            {{- with .Values.config.backup.schedule }}
+            - name: BACKUP_SCHEDULE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.backup.time }}
+            - name: BACKUP_TIME
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.backup.retention }}
+            - name: BACKUP_RETENTION
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.smtp.host }}
+            - name: SMTP_HOST
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.smtp.port }}
+            - name: SMTP_PORT
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.smtp.secure }}
+            - name: SMTP_SECURE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.smtp.user }}
+            - name: SMTP_USER
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.smtp.from }}
+            - name: SMTP_FROM
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.oidc }}
+            {{- with .issuer }}
+            - name: OIDC_ISSUER
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .clientId }}
+            - name: OIDC_CLIENT_ID
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .displayName }}
+            - name: OIDC_DISPLAY_NAME
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .redirectUris }}
+            - name: OIDC_REDIRECT_URIS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .scope }}
+            - name: OIDC_SCOPE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .tokenAuthMethod }}
+            - name: OIDC_TOKEN_AUTH_METHOD
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .adminGroupClaim }}
+            - name: OIDC_ADMIN_GROUP_CLAIM
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .adminGroupValue }}
+            - name: OIDC_ADMIN_GROUP_VALUE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if not (kindIs "invalid" .autoLink) }}
+            - name: OIDC_AUTO_LINK
+              value: {{ include "cooktrace.flag" .autoLink | quote }}
+            {{- end }}
+            {{- if not (kindIs "invalid" .autoRegister) }}
+            - name: OIDC_AUTO_REGISTER
+              value: {{ include "cooktrace.flag" .autoRegister | quote }}
+            {{- end }}
+            {{- if not (kindIs "invalid" .enableEmailPasswordLogin) }}
+            - name: OIDC_ENABLE_EMAIL_PASSWORD_LOGIN
+              value: {{ include "cooktrace.flag" .enableEmailPasswordLogin | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.config.ai.enabled }}
+            - name: AI_ENABLED
+              value: "true"
+            {{- end }}
+            {{- with .Values.config.ai.provider }}
+            - name: AI_PROVIDER
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.ai.model }}
+            - name: AI_MODEL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.ai.baseUrl }}
+            - name: AI_BASE_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.config.ai.allowPrivateUrls }}
+            - name: ALLOW_PRIVATE_AI_URLS
+              value: "1"
+            {{- end }}
+            {{- if .Values.config.mcp.enabled }}
+            - name: MCP_ENABLED
+              value: "1"
+            {{- end }}
+            {{- if .Values.config.mcp.writeEnabled }}
+            - name: MCP_WRITE_ENABLED
+              value: "1"
+            {{- end }}
+            {{- if .Values.config.mcp.destroyEnabled }}
+            - name: MCP_DESTROY_ENABLED
+              value: "1"
+            {{- end }}
+            {{- with .Values.config.mcp.allowedOrigins }}
+            - name: ALLOWED_ORIGINS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.config.publicApi.enabled }}
+            - name: PUBLIC_API_ENABLED
+              value: "1"
+            {{- end }}
+            {{- if .Values.config.publicApi.writeEnabled }}
+            - name: PUBLIC_API_WRITE_ENABLED
+              value: "1"
+            {{- end }}
+            {{- if .Values.config.webhooks.enabled }}
+            - name: WEBHOOKS_ENABLED
+              value: "1"
+            {{- end }}
+            {{- if .Values.config.webhooks.allowPrivateUrls }}
+            - name: ALLOW_PRIVATE_WEBHOOK_URLS
+              value: "1"
+            {{- end }}
+            {{- range $name, $value := .Values.env }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+            {{- end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.config.baseUrl | trimSuffix "/" }}/api/health
+              port: http
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.config.baseUrl | trimSuffix "/" }}/api/health
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: db
+              mountPath: /data/db
+            - name: uploads
+              mountPath: /data/uploads
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: db
+          persistentVolumeClaim:
+            claimName: {{ include "cooktrace.dbClaimName" . }}
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: {{ include "cooktrace.uploadsClaimName" . }}
+        - name: tmp
+          emptyDir: {}
