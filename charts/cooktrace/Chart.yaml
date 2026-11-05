@@ -1,0 +1,17 @@
+apiVersion: v2
+name: cooktrace
+type: application
+version: 0.1.0
+appVersion: "1.4.1"
+description: >
+  Helm chart for CookTrace — a self-hosted recipe manager with pantry tracking,
+  meal planning, shopping lists, and optional OpenID Connect authentication.
+home: https://github.com/TraceApps/cooktrace
+sources:
+  - https://github.com/TraceApps/cooktrace
+keywords:
+  - recipes
+  - pantry
+  - meal-planning
+  - grocery
+dependencies: []

@@ -1,0 +1,36 @@
+{{- if not .Values.persistence.db.existingClaimName }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "cooktrace.dbClaimName" . }}
+  labels:
+    {{- include "cooktrace.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.persistence.db.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.persistence.db.size }}
+{{- end }}
+{{- if not .Values.persistence.uploads.existingClaimName }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "cooktrace.uploadsClaimName" . }}
+  labels:
+    {{- include "cooktrace.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.persistence.uploads.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.persistence.uploads.size }}
+{{- end }}
